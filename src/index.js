@@ -15,11 +15,9 @@ library.add(fas, far, fab);
 
 const container = document.getElementById("root");
 const root = createRoot(container);
-
+// Xóa thẻ <React.StrictMode> bao bên ngoài đi
 root.render(
-  <React.StrictMode>
-    <Router>
-      <App />
-    </Router>
-  </React.StrictMode>
+  <Router>
+    <App />
+  </Router>
 );
