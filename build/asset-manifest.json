@@ -1,0 +1,18 @@
+{
+  "files": {
+    "main.css": "/react-ecommerce/static/css/main.06f2e99b.css",
+    "main.js": "/react-ecommerce/static/js/main.e632c1b9.js",
+    "static/media/banner-2.jpg": "/react-ecommerce/static/media/banner-2.e792fe61a57973a5b60b.jpg",
+    "static/media/nillkin-case.webp": "/react-ecommerce/static/media/nillkin-case.39a022bd94e28dc6b955.webp",
+    "static/media/banner-1.jpg": "/react-ecommerce/static/media/banner-1.1f5bb6ba30a89f69db3e.jpg",
+    "static/media/nillkin-case-1.jpg": "/react-ecommerce/static/media/nillkin-case-1.60dec4fb7de719b33e51.jpg",
+    "static/media/banner-0.jpg": "/react-ecommerce/static/media/banner-0.83a86819981256ecaebe.jpg",
+    "index.html": "/react-ecommerce/index.html",
+    "main.06f2e99b.css.map": "/react-ecommerce/static/css/main.06f2e99b.css.map",
+    "main.e632c1b9.js.map": "/react-ecommerce/static/js/main.e632c1b9.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.06f2e99b.css",
+    "static/js/main.e632c1b9.js"
+  ]
+}
