@@ -8,9 +8,15 @@ function App() {
   return (
     <Template>
       <Routes>
-        <Route path="/products" element={<ProductList />} />
-        <Route path="/products/:slug" element={<ProductDetail />} />
-        <Route path="/" element={<Landing />} />
+        {/* 1. Đưa ProductList làm trang chủ để vừa vào web là thấy thanh tìm kiếm và bộ lọc ngay */}
+        <Route path="/" element={<ProductList />} />
+
+        {/* 2. Nếu vẫn muốn giữ trang Landing cũ, bạn có thể chuyển nó sang đường dẫn /landing */}
+        <Route path="/landing" element={<Landing />} />
+
+        {/* 3. Trang chi tiết sản phẩm: Đổi từ :slug thành :id để khớp với dữ liệu int từ MySQL và code Axios */}
+        <Route path="/products/:id" element={<ProductDetail />} />
+        
         <Route
           path="/about"
           element={
