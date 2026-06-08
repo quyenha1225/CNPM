@@ -16,7 +16,7 @@ function ProductList() {
     // Nếu người dùng có nhập từ khóa tìm kiếm, ta gọi API /search
     if (searchTerm.trim() !== "") {
       axios
-        .get(`http://localhost:5000/search`, {
+        .get(`http://localhost:3000/search`, {
           params: { q: searchTerm, category: category || undefined }
         })
         .then((response) => {
