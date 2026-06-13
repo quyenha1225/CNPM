@@ -1,9 +1,11 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import { useCart } from "../context/CartContext";
 
 function Header() {
   const [openedDrawer, setOpenedDrawer] = useState(false);
+  const { getTotalItems } = useCart();
 
   function toggleDrawer() {
     setOpenedDrawer(!openedDrawer);
@@ -31,20 +33,20 @@ function Header() {
           <div className={"navbar-collapse offcanvas-collapse " + (openedDrawer ? 'open' : '')}>
             <ul className="navbar-nav me-auto mb-lg-0">
               <li className="nav-item">
-                <Link to="/" className="nav-link">Home</Link>
+                <Link to="/" className="nav-link" onClick={changeNav}>Home</Link>
               </li>
               <li className="nav-item">
-                <Link to="/products" className="nav-link">Products</Link>
+                <Link to="/products" className="nav-link" onClick={changeNav}>Products</Link>
               </li>
               <li className="nav-item">
-                <Link to="/about" className="nav-link">About</Link>
+                <Link to="/about" className="nav-link" onClick={changeNav}>About</Link>
               </li>
             </ul>
             
-            <button type="button" className="btn btn-outline-dark me-3 d-none d-lg-inline">
+            <Link to="/cart" className="btn btn-outline-dark me-3 d-none d-lg-inline" onClick={changeNav}>
               <FontAwesomeIcon icon={["fas", "shopping-cart"]} />
-              <span className="ms-3 badge rounded-pill bg-dark">0</span>
-            </button>
+              <span className="ms-3 badge rounded-pill bg-dark">{getTotalItems()}</span>
+            </Link>
             
             <ul className="navbar-nav mb-2 mb-lg-0">
               <li className="nav-item dropdown">
@@ -63,12 +65,12 @@ function Header() {
                   aria-labelledby="userDropdown"
                 >
                   <li>
-                    <Link to="/" className="dropdown-item" onClick={changeNav}>
+                    <Link to="/login" className="dropdown-item" onClick={changeNav}>
                       Login
                     </Link>
                   </li>
                   <li>
-                    <Link to="/" className="dropdown-item" onClick={changeNav}>
+                    <Link to="/register" className="dropdown-item" onClick={changeNav}>
                       Sign Up
                     </Link>
                   </li>
@@ -78,10 +80,10 @@ function Header() {
           </div>
 
           <div className="d-inline-block d-lg-none">
-            <button type="button" className="btn btn-outline-dark">
+            <Link to="/cart" className="btn btn-outline-dark" onClick={changeNav}>
               <FontAwesomeIcon icon={["fas", "shopping-cart"]} />
-              <span className="ms-3 badge rounded-pill bg-dark">0</span>
-            </button>
+              <span className="ms-3 badge rounded-pill bg-dark">{getTotalItems()}</span>
+            </Link>
             <button className="navbar-toggler p-0 border-0 ms-3" type="button" onClick={toggleDrawer}>
               <span className="navbar-toggler-icon"></span>
             </button>
