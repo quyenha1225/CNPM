@@ -1,71 +1,60 @@
-import Template from "./template/Template";
-
-import ProductDetail from "./products/detail/ProductDetail";
-
+import { useState } from "react";
 import { Routes, Route } from "react-router-dom";
-
-import Landing from "./landing/Landing";
-
+import Template from "./template/Template";
+import ProductDetail from "./products/detail/ProductDetail";
+import Landing from "./landing/Landing"; // Trang chủ mặc định ban đầu của bạn
 import ProductList from "./products/ProductList";
 
-
-
 function App() {
+  // Quản lý State tập trung để đồng bộ giữa Mega Menu và trang sản phẩm
+  const [currentCategory, setCurrentCategory] = useState("");
+  const [currentBrand, setCurrentBrand] = useState("");
 
   return (
-
-    <Template>
-
+    <Template setCategory={setCurrentCategory} setBrand={setCurrentBrand}>
       <Routes>
-
-        <Route path="/products" element={<ProductList />} />
-
-        <Route path="/products/:slug" element={<ProductDetail />} />
-
+        {/* 1. ĐƯA TRANG LANDING CŨ VỀ LÀM TRANG CHỦ MẶC ĐỊNH (/) */}
         <Route path="/" element={<Landing />} />
+        
+        {/* 2. CHỈ KHI VÀO ĐƯỜNG DẪN /products MỚI RA TRANG SẢN PHẨM CÔNG NGHỆ */}
+        <Route 
+          path="/products" 
+          element={
+            <ProductList 
+              category={currentCategory} 
+              setCategory={setCurrentCategory}
+              brand={currentBrand}
+              setBrand={setCurrentBrand}
+            />
+          } 
+        />
 
+        {/* Trang chi tiết sản phẩm */}
+        <Route path="/products/:id" element={<ProductDetail />} />
+        
+        {/* Trang Giới thiệu */}
         <Route
-
           path="/about"
-
           element={
-
             <div className="container mt-5 text-center">
-
               <h2>Trang About đang được xây dựng...</h2>
-
             </div>
-
           }
-
         />
-
+        
+        {/* Bắt lỗi trang 404 */}
         <Route
-
           path="*"
-
           element={
-
             <div className="container mt-5 text-center">
-
               <h1 className="text-danger">404 - Không tìm thấy trang</h1>
-
               <p>Vui lòng quay lại trang chủ.</p>
-
             </div>
-
           }
-
         />
-
       </Routes>
-
     </Template>
-
   );
-
 }
-
-
 
 export default App;
