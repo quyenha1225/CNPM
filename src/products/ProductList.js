@@ -14,7 +14,7 @@ const menuCategories = [
 ];
 
 // 2. KHO DỮ LIỆU CHUẨN 100 SẢN PHẨM CÔNG NGHỆ KHỚP VỚI CÁC CỘT TRÊN MEGA MENU
-const mockProductsFromMySQL = [
+export const mockProductsFromMySQL = [
   // ================= CỘT 1: HỆ THỐNG PC (20 Sản phẩm) =================
   // PC Gaming (category: "PC_Gaming", brand: "Khac")
   { id: 1, name: "PC Gaming Shark i5 13400F | RTX 4060 | 16GB RAM", price: 18500000, category: "PC_Gaming", brand: "Khac", image_url: "", percent_off: 10 },
