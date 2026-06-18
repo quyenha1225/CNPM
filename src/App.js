@@ -1,9 +1,35 @@
-import { useState } from "react";
-import { Routes, Route } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Routes, Route, useParams } from "react-router-dom";
 import Template from "./template/Template";
 import ProductDetail from "./products/detail/ProductDetail";
 import Landing from "./landing/Landing"; // Trang chủ mặc định ban đầu của bạn
 import ProductList from "./products/ProductList";
+
+const categorySlugMap = {
+  laptop: "Laptop",
+  "dien-thoai": "DienThoai",
+  "phu-kien": "PhuKien",
+  "linh-kien-pc": "LinhKien",
+  "man-hinh": "ManHinh",
+};
+
+function CategoryProductPage({ category, setCategory, brand, setBrand }) {
+  const { categorySlug } = useParams();
+
+  useEffect(() => {
+    setCategory(categorySlugMap[categorySlug] || "");
+    setBrand("");
+  }, [categorySlug, setBrand, setCategory]);
+
+  return (
+    <ProductList
+      category={category}
+      setCategory={setCategory}
+      brand={brand}
+      setBrand={setBrand}
+    />
+  );
+}
 
 function App() {
   // Quản lý State tập trung để đồng bộ giữa Mega Menu và trang sản phẩm
@@ -27,6 +53,18 @@ function App() {
               setBrand={setCurrentBrand}
             />
           } 
+        />
+
+        <Route
+          path="/category/:categorySlug"
+          element={
+            <CategoryProductPage
+              category={currentCategory}
+              setCategory={setCurrentCategory}
+              brand={currentBrand}
+              setBrand={setCurrentBrand}
+            />
+          }
         />
 
         {/* Trang chi tiết sản phẩm */}
