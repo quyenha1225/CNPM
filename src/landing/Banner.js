@@ -1,6 +1,34 @@
 import BannerZero from "./banner-0.jpg";
 import BannerOne from "./banner-1.jpg";
 import BannerTwo from "./banner-2.jpg";
+import { Link } from "react-router-dom";
+
+const banners = [
+  {
+    image: BannerZero,
+    title: "PC gaming, laptop và linh kiện chính hãng",
+    text: "Chọn nhanh cấu hình phù hợp cho học tập, làm việc và giải trí với mức giá rõ ràng.",
+    kicker: "Gearxin PC",
+    action: "Xem sản phẩm",
+    to: "/products",
+  },
+  {
+    image: BannerOne,
+    title: "Laptop mỏng nhẹ cho học tập và văn phòng",
+    text: "Các mẫu laptop phổ biến, dễ chọn, phù hợp nhu cầu đi học, đi làm và di chuyển mỗi ngày.",
+    kicker: "Laptop nổi bật",
+    action: "Xem laptop",
+    to: "/category/laptop",
+  },
+  {
+    image: BannerTwo,
+    title: "Phụ kiện và màn hình cho góc máy gọn đẹp",
+    text: "Hoàn thiện setup với màn hình, chuột, bàn phím và phụ kiện công nghệ cần thiết.",
+    kicker: "Setup trọn bộ",
+    action: "Khám phá ngay",
+    to: "/category/phu-kien",
+  },
+];
 
 function BannerIndicator(props) {
   return (
@@ -20,19 +48,27 @@ function BannerImage(props) {
       className={"carousel-item " + (props.active ? "active" : "")}
       data-bs-interval="5000"
     >
-      <div
-        className="ratio"
-        style={{ "--bs-aspect-ratio": "50%", maxHeight: "460px" }}
-      >
+      <div className="ratio home-banner-ratio">
         <img
-          className="d-block w-100 h-100 bg-dark cover"
-          alt=""
+          className="d-block w-100 h-100 bg-dark cover home-banner-image"
+          alt={props.title}
           src={props.image}
         />
+        <div className="home-banner-overlay" />
       </div>
-      <div className="carousel-caption d-none d-lg-block">
-        <h5>Banner Header</h5>
-        <p>Some representative placeholder content for the banner.</p>
+
+      <div className="home-banner-caption">
+        <p className="home-banner-kicker">{props.kicker}</p>
+        <h1 className="home-banner-title">{props.title}</h1>
+        <p className="home-banner-text">{props.text}</p>
+        <div className="home-hero-actions">
+          <Link to={props.to} className="btn btn-warning btn-lg fw-bold">
+            {props.action}
+          </Link>
+          <Link to="/about" className="btn btn-outline-light btn-lg">
+            Liên hệ tư vấn
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -42,20 +78,52 @@ function Banner() {
   return (
     <div
       id="bannerIndicators"
-      className="carousel slide"
+      className="carousel slide home-hero-carousel"
       data-bs-ride="carousel"
-      style={{ marginTop: "56px" }}
     >
       <div className="carousel-indicators">
-        <BannerIndicator index="0" active={true} />
-        <BannerIndicator index="1" />
-        <BannerIndicator index="2" />
+        {banners.map((banner, index) => (
+          <BannerIndicator
+            key={banner.title}
+            index={index}
+            active={index === 0}
+          />
+        ))}
       </div>
+
       <div className="carousel-inner">
-        <BannerImage image={BannerZero} active={true} />
-        <BannerImage image={BannerOne} />
-        <BannerImage image={BannerTwo} />
+        {banners.map((banner, index) => (
+          <BannerImage
+            key={banner.title}
+            image={banner.image}
+            title={banner.title}
+            text={banner.text}
+            kicker={banner.kicker}
+            action={banner.action}
+            to={banner.to}
+            active={index === 0}
+          />
+        ))}
       </div>
+
+      <button
+        className="carousel-control-prev"
+        type="button"
+        data-bs-target="#bannerIndicators"
+        data-bs-slide="prev"
+      >
+        <span className="carousel-control-prev-icon" aria-hidden="true" />
+        <span className="visually-hidden">Previous</span>
+      </button>
+      <button
+        className="carousel-control-next"
+        type="button"
+        data-bs-target="#bannerIndicators"
+        data-bs-slide="next"
+      >
+        <span className="carousel-control-next-icon" aria-hidden="true" />
+        <span className="visually-hidden">Next</span>
+      </button>
     </div>
   );
 }
