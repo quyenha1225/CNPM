@@ -26,7 +26,7 @@ main {
 
 @media (max-width: 767.98px) {
   :root {
-    --eshop-header-height: 112px;
+    --eshop-header-height: 112px; 
   }
 }
 
