@@ -5,7 +5,7 @@ import Footer from "./Footer";
 function Template(props) {
   return (
     <>
-      <Header />
+      <Header setCategory={props.setCategory} setBrand={props.setBrand} />
       <Content>{props.children}</Content>
       <Footer />
     </>
