@@ -1,64 +1,96 @@
 ﻿import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { toast } from "../utils/Toast";
 import "./Auth.css";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!email) {
+      newErrors.email = "Email không được để trống";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Email không hợp lệ";
+    }
+    
+    if (!password) {
+      newErrors.password = "Mật khẩu không được để trống";
+    } else if (password.length < 6) {
+      newErrors.password = "Mật khẩu phải có ít nhất 6 ký tự";
+    }
+    
+    return newErrors;
+  };
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (email && password) {
-      alert("Đăng nhập thành công!");
-      // Có thể thêm logic đăng nhập thực tế ở đây
-      navigate("/");
-    } else {
-      alert("Vui lòng nhập email và mật khẩu!");
+    const newErrors = validateForm();
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.warning("⚠ Vui lòng kiểm tra lại thông tin", 3000);
+      return;
     }
+    
+    setErrors({});
+    toast.success("✓ Đăng nhập thành công! Chào mừng quay lại!", 2000);
+    
+    setTimeout(() => {
+      navigate("/");
+    }, 500);
   };
 
   return (
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <h2 className="text-dark mb-4">Đăng Nhập</h2>
-          <p className="text-muted">Chào mừng quay lại ElectroShop</p>
+          <h2>Đăng Nhập</h2>
+          <p>Chào mừng quay lại ElectroShop</p>
         </div>
 
         <form onSubmit={handleLogin} className="auth-form">
           {/* Email Field */}
-          <div className="mb-3">
+          <div className="form-group">
             <label htmlFor="email" className="form-label">
               <FontAwesomeIcon icon={["fas", "envelope"]} /> Email
             </label>
             <input
               type="email"
-              className="form-control form-control-lg"
+              className={`form-control form-control-lg ${errors.email ? "is-invalid" : ""}`}
               id="email"
               placeholder="Nhập email của bạn"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (errors.email) setErrors({...errors, email: ""});
+              }}
             />
+            {errors.email && <div className="invalid-feedback">{errors.email}</div>}
           </div>
 
           {/* Password Field */}
-          <div className="mb-3">
+          <div className="form-group">
             <label htmlFor="password" className="form-label">
               <FontAwesomeIcon icon={["fas", "lock"]} /> Mật khẩu
             </label>
             <div className="password-input-group">
               <input
                 type={showPassword ? "text" : "password"}
-                className="form-control form-control-lg"
+                className={`form-control form-control-lg ${errors.password ? "is-invalid" : ""}`}
                 id="password"
                 placeholder="Nhập mật khẩu"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) setErrors({...errors, password: ""});
+                }}
               />
               <button
                 type="button"
@@ -70,10 +102,11 @@ function Login() {
                 />
               </button>
             </div>
+            {errors.password && <div className="invalid-feedback">{errors.password}</div>}
           </div>
 
           {/* Remember Me & Forgot Password */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
+          <div className="auth-options">
             <div className="form-check">
               <input
                 className="form-check-input"
@@ -86,7 +119,7 @@ function Login() {
             </div>
             <Link
               to="/forgot-password"
-              className="text-primary text-decoration-none"
+              className="forgot-password-link"
             >
               Quên mật khẩu?
             </Link>
@@ -111,20 +144,19 @@ function Login() {
           <FontAwesomeIcon icon={["fas", "user-plus"]} /> Tạo Tài Khoản Mới
         </Link>
 
-        {/* Social Login (Optional) */}
-        <div className="social-login mt-4">
-          <button className="btn btn-outline-secondary btn-sm w-100 mb-2">
+        {/* Social Login */}
+        <div className="social-login">
+          <button className="btn btn-outline-secondary btn-sm w-100 mb-2" type="button">
             <FontAwesomeIcon icon={["fab", "google"]} /> Đăng nhập bằng Google
           </button>
-          <button className="btn btn-outline-secondary btn-sm w-100">
-            <FontAwesomeIcon icon={["fab", "facebook"]} /> Đăng nhập bằng
-            Facebook
+          <button className="btn btn-outline-secondary btn-sm w-100" type="button">
+            <FontAwesomeIcon icon={["fab", "facebook"]} /> Đăng nhập bằng Facebook
           </button>
         </div>
 
         {/* Back to Home */}
-        <div className="text-center mt-4">
-          <Link to="/" className="text-muted text-decoration-none">
+        <div className="back-to-home">
+          <Link to="/">
             <FontAwesomeIcon icon={["fas", "arrow-left"]} /> Quay lại trang chủ
           </Link>
         </div>

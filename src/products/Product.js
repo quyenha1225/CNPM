@@ -2,6 +2,7 @@ import Image from "../nillkin-case-1.jpg";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useCart } from "../context/CartContext";
+import { toast } from "../utils/Toast";
 
 function Product(props) {
   const { addToCart } = useCart();
@@ -33,7 +34,7 @@ function Product(props) {
       price: price,
       quantity: 1,
     });
-    alert("Sản phẩm đã được thêm vào giỏ hàng!");
+    toast.success("✓ Sản phẩm đã được thêm vào giỏ hàng!", 3000);
   };
 
   return (

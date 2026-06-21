@@ -2,6 +2,7 @@
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Image from "../nillkin-case-1.jpg";
+import "./cart.css";
 
 function Cart() {
   const { cartItems, removeFromCart, updateQuantity, getTotalPrice } = useCart();
@@ -18,20 +19,18 @@ function Cart() {
 
   if (cartItems.length === 0) {
     return (
-      <div className="container mt-5 pt-5">
+      <div className="container cart-container">
         <div className="row justify-content-center">
           <div className="col-md-8">
-            <div className="text-center py-5">
-              <FontAwesomeIcon
-                icon={["fas", "shopping-cart"]}
-                size="4x"
-                className="text-muted mb-4"
-              />
-              <h2 className="text-dark mb-3">Giỏ hàng của bạn trống</h2>
-              <p className="text-muted mb-4">
+            <div className="empty-cart-container">
+              <div className="empty-cart-icon">
+                <FontAwesomeIcon icon={["fas", "shopping-cart"]} />
+              </div>
+              <h2 className="empty-cart-title">Giỏ hàng của bạn trống</h2>
+              <p className="empty-cart-text">
                 Hãy thêm một số sản phẩm vào giỏ hàng của bạn để bắt đầu mua sắm!
               </p>
-              <Link to="/products" className="btn btn-primary btn-lg">
+              <Link to="/products" className="empty-cart-btn">
                 <FontAwesomeIcon icon={["fas", "arrow-left"]} /> Tiếp tục mua sắm
               </Link>
             </div>
@@ -46,17 +45,18 @@ function Cart() {
   const finalTotal = totalPrice + shippingCost;
 
   return (
-    <div className="container mt-5 pt-5">
+    <div className="container cart-container">
       <div className="row mb-4">
         <div className="col-md-8">
-          <h2 className="text-dark mb-4">
-            <FontAwesomeIcon icon={["fas", "shopping-cart"]} /> Giỏ hàng của bạn
-          </h2>
+          <div className="cart-header">
+            <FontAwesomeIcon icon={["fas", "shopping-cart"]} style={{ marginRight: "12px", fontSize: "1.5rem", color: "#667eea" }} />
+            <h2>Giỏ hàng của bạn</h2>
+          </div>
 
           {/* Bảng sản phẩm */}
-          <div className="table-responsive">
-            <table className="table table-hover">
-              <thead className="table-light">
+          <div className="cart-table-responsive">
+            <table className="table cart-table">
+              <thead>
                 <tr>
                   <th>Sản phẩm</th>
                   <th>Giá</th>
@@ -67,31 +67,25 @@ function Cart() {
               </thead>
               <tbody>
                 {cartItems.map((item) => (
-                  <tr key={item.id} className="align-middle">
+                  <tr key={item.id}>
                     <td>
-                      <div className="d-flex align-items-center">
+                      <div className="product-info">
                         <img
                           src={Image}
                           alt={item.name}
-                          className="rounded"
-                          style={{
-                            width: "60px",
-                            height: "60px",
-                            objectFit: "cover",
-                            marginRight: "15px",
-                          }}
+                          className="product-image"
                         />
-                        <div>
-                          <h6 className="mb-0 text-dark">{item.name}</h6>
-                          <small className="text-muted">ID: {item.id}</small>
+                        <div className="product-details">
+                          <h6>{item.name}</h6>
+                          <small>ID: {item.id}</small>
                         </div>
                       </div>
                     </td>
                     <td>
-                      <strong>{item.price.toLocaleString()}đ</strong>
+                      <div className="price-cell">{item.price.toLocaleString()}đ</div>
                     </td>
                     <td>
-                      <div className="input-group" style={{ width: "120px" }}>
+                      <div className="quantity-input-group">
                         <button
                           className="btn btn-outline-secondary btn-sm"
                           type="button"
@@ -103,7 +97,7 @@ function Cart() {
                         </button>
                         <input
                           type="number"
-                          className="form-control text-center"
+                          className="form-control"
                           value={item.quantity}
                           onChange={(e) =>
                             handleQuantityChange(
@@ -125,13 +119,13 @@ function Cart() {
                       </div>
                     </td>
                     <td>
-                      <strong>
+                      <div className="total-cell">
                         {(item.price * item.quantity).toLocaleString()}đ
-                      </strong>
+                      </div>
                     </td>
                     <td>
                       <button
-                        className="btn btn-danger btn-sm"
+                        className="btn btn-sm remove-btn"
                         onClick={() => handleRemoveItem(item.id)}
                         title="Xóa sản phẩm"
                       >
@@ -145,7 +139,7 @@ function Cart() {
           </div>
 
           {/* Nút tiếp tục mua sắm */}
-          <div className="mt-4">
+          <div className="continue-shopping">
             <Link to="/products" className="btn btn-outline-primary">
               <FontAwesomeIcon icon={["fas", "arrow-left"]} /> Tiếp tục mua sắm
             </Link>
@@ -154,54 +148,70 @@ function Cart() {
 
         {/* Bản tóm tắt đơn hàng */}
         <div className="col-md-4">
-          <div className="card shadow-sm sticky-top" style={{ top: "100px" }}>
-            <div className="card-header bg-light border-bottom">
-              <h5 className="mb-0 text-dark">Tóm tắt đơn hàng</h5>
+          <div className="order-summary">
+            <div className="summary-header">
+              <h5>Tóm tắt đơn hàng</h5>
             </div>
-            <div className="card-body">
+            <div className="summary-body">
               {/* Tổng tiền hàng */}
-              <div className="d-flex justify-content-between mb-3">
-                <span className="text-muted">Tổng tiền hàng:</span>
-                <strong className="text-dark">
+              <div className="summary-row">
+                <span className="summary-label">Tổng tiền hàng:</span>
+                <span className="summary-value">
                   {totalPrice.toLocaleString()}đ
-                </strong>
+                </span>
               </div>
 
               {/* Số lượng sản phẩm */}
-              <div className="d-flex justify-content-between mb-3">
-                <span className="text-muted">Số lượng sản phẩm:</span>
-                <strong className="text-dark">{cartItems.length} loại</strong>
+              <div className="summary-row">
+                <span className="summary-label">Số lượng sản phẩm:</span>
+                <span className="summary-value">{cartItems.length} loại</span>
               </div>
 
               {/* Phí vận chuyển */}
-              <div className="d-flex justify-content-between mb-3 pb-3 border-bottom">
-                <span className="text-muted">Phí vận chuyển:</span>
-                <strong className="text-dark">
+              <div className="summary-row">
+                <span className="summary-label">Phí vận chuyển:</span>
+                <span className="summary-value">
                   {shippingCost.toLocaleString()}đ
-                </strong>
+                </span>
               </div>
 
               {/* Tổng cộng */}
-              <div className="d-flex justify-content-between mb-4">
-                <span className="h6 text-dark">Tổng cộng:</span>
-                <h5 className="text-danger m-0">
+              <div className="summary-row total-row">
+                <span className="summary-label">Tổng cộng:</span>
+                <span className="summary-value">
                   {finalTotal.toLocaleString()}đ
-                </h5>
+                </span>
               </div>
 
               {/* Nút thanh toán */}
-              <button className="btn btn-danger w-100 mb-2">
-                <FontAwesomeIcon icon={["fas", "credit-card"]} /> Tiến hành thanh
-                toán
+              <button className="checkout-btn">
+                <FontAwesomeIcon icon={["fas", "credit-card"]} /> Tiến hành thanh toán
               </button>
 
               {/* Nút tiếp tục mua sắm (mobile) */}
               <Link
                 to="/products"
-                className="btn btn-outline-primary w-100 d-md-none"
+                className="continue-btn-mobile d-md-none"
+                replace
               >
                 <FontAwesomeIcon icon={["fas", "arrow-left"]} /> Tiếp tục mua sắm
               </Link>
+
+              {/* Thông tin bổ sung */}
+              <div className="info-box mt-4">
+                <div className="info-item">
+                  <FontAwesomeIcon icon={["fas", "check"]} className="info-icon" />
+                  <span>Miễn phí vận chuyển cho đơn từ 500.000đ</span>
+                </div>
+                <div className="info-item">
+                  <FontAwesomeIcon icon={["fas", "check"]} className="info-icon" />
+                  <span>Hoàn tiền 100% nếu không hài lòng</span>
+                </div>
+                <div className="info-item">
+                  <FontAwesomeIcon icon={["fas", "check"]} className="info-icon" />
+                  <span>Giao hàng trong 2-3 ngày</span>
+                </div>
+              </div>
             </div>
           </div>
 
