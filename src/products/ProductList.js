@@ -1,39 +1,56 @@
 import { Link } from "react-router-dom";
 import Product from "./Product";
 import ProductH from "./ProductH";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import ScrollToTopOnMount from "../template/ScrollToTopOnMount";
+import { PRODUCT_DATA, filterProducts } from "./productFilters";
 
 const categories = [
   "All Products",
   "Phones & Tablets",
+  "Laptops",
   "Cases & Covers",
   "Screen Guards",
   "Cables & Chargers",
   "Power Banks",
 ];
 
-const brands = ["Apple", "Samsung", "Google", "HTC"];
+const brands = ["Apple", "Samsung", "Dell", "Baseus"];
 
-const manufacturers = ["HOCO", "Nillkin", "Remax", "Baseus"];
+const manufacturers = ["Apple", "Samsung", "Dell", "Baseus"];
 
-function FilterMenuLeft() {
+function FilterMenuLeft({
+  selectedCategory,
+  onCategoryChange,
+  selectedBrands,
+  onBrandToggle,
+  selectedManufacturers,
+  onManufacturerToggle,
+  minPrice,
+  maxPrice,
+  onMinPriceChange,
+  onMaxPriceChange,
+  onApply,
+}) {
   return (
     <ul className="list-group list-group-flush rounded">
       <li className="list-group-item d-none d-lg-block">
         <h5 className="mt-1 mb-2">Browse</h5>
         <div className="d-flex flex-wrap my-2">
           {categories.map((v, i) => {
+            const active = selectedCategory === v;
             return (
-              <Link
+              <button
                 key={i}
-                to="/products"
-                className="btn btn-sm btn-outline-dark rounded-pill me-2 mb-2"
-                replace
+                type="button"
+                className={`btn btn-sm rounded-pill me-2 mb-2 ${
+                  active ? "btn-dark" : "btn-outline-dark"
+                }`}
+                onClick={() => onCategoryChange(v)}
               >
                 {v}
-              </Link>
+              </button>
             );
           })}
         </div>
@@ -42,12 +59,16 @@ function FilterMenuLeft() {
         <h5 className="mt-1 mb-1">Brands</h5>
         <div className="d-flex flex-column">
           {brands.map((v, i) => {
+            const checked = selectedBrands.includes(v);
             return (
               <div key={i} className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexCheckDefault">
-                  {v}
-                </label>
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => onBrandToggle(v)}
+                />
+                <label className="form-check-label">{v}</label>
               </div>
             );
           })}
@@ -57,12 +78,16 @@ function FilterMenuLeft() {
         <h5 className="mt-1 mb-1">Manufacturers</h5>
         <div className="d-flex flex-column">
           {manufacturers.map((v, i) => {
+            const checked = selectedManufacturers.includes(v);
             return (
               <div key={i} className="form-check">
-                <input className="form-check-input" type="checkbox" />
-                <label className="form-check-label" htmlFor="flexCheckDefault">
-                  {v}
-                </label>
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => onManufacturerToggle(v)}
+                />
+                <label className="form-check-label">{v}</label>
               </div>
             );
           })}
@@ -73,23 +98,27 @@ function FilterMenuLeft() {
         <div className="d-grid d-block mb-3">
           <div className="form-floating mb-2">
             <input
-              type="text"
+              type="number"
               className="form-control"
               placeholder="Min"
-              defaultValue="100000"
+              value={minPrice}
+              onChange={(e) => onMinPriceChange(e.target.value)}
             />
             <label htmlFor="floatingInput">Min Price</label>
           </div>
           <div className="form-floating mb-2">
             <input
-              type="text"
+              type="number"
               className="form-control"
               placeholder="Max"
-              defaultValue="500000"
+              value={maxPrice}
+              onChange={(e) => onMaxPriceChange(e.target.value)}
             />
             <label htmlFor="floatingInput">Max Price</label>
           </div>
-          <button className="btn btn-dark">Apply</button>
+          <button className="btn btn-dark" onClick={onApply}>
+            Apply
+          </button>
         </div>
       </li>
     </ul>
@@ -98,10 +127,47 @@ function FilterMenuLeft() {
 
 function ProductList() {
   const [viewType, setViewType] = useState({ grid: true });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All Products");
+  const [selectedBrands, setSelectedBrands] = useState([]);
+  const [selectedManufacturers, setSelectedManufacturers] = useState([]);
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [appliedFilters, setAppliedFilters] = useState({
+    searchTerm: "",
+    selectedCategory: "All Products",
+    selectedBrands: [],
+    selectedManufacturers: [],
+    minPrice: "",
+    maxPrice: "",
+  });
 
   function changeViewType() {
     setViewType({
       grid: !viewType.grid,
+    });
+  }
+
+  function toggleValue(list, value, setter) {
+    if (list.includes(value)) {
+      setter(list.filter((item) => item !== value));
+    } else {
+      setter([...list, value]);
+    }
+  }
+
+  const filteredProducts = useMemo(() => {
+    return filterProducts(PRODUCT_DATA, appliedFilters);
+  }, [appliedFilters]);
+
+  function applyFilters() {
+    setAppliedFilters({
+      searchTerm,
+      selectedCategory,
+      selectedBrands,
+      selectedManufacturers,
+      minPrice,
+      maxPrice,
     });
   }
 
@@ -166,7 +232,23 @@ function ProductList() {
               data-bs-parent="#accordionFilter"
             >
               <div className="accordion-body p-0">
-                <FilterMenuLeft />
+                <FilterMenuLeft
+                  selectedCategory={selectedCategory}
+                  onCategoryChange={setSelectedCategory}
+                  selectedBrands={selectedBrands}
+                  onBrandToggle={(value) =>
+                    toggleValue(selectedBrands, value, setSelectedBrands)
+                  }
+                  selectedManufacturers={selectedManufacturers}
+                  onManufacturerToggle={(value) =>
+                    toggleValue(selectedManufacturers, value, setSelectedManufacturers)
+                  }
+                  minPrice={minPrice}
+                  maxPrice={maxPrice}
+                  onMinPriceChange={setMinPrice}
+                  onMaxPriceChange={setMaxPrice}
+                  onApply={applyFilters}
+                />
               </div>
             </div>
           </div>
@@ -176,7 +258,23 @@ function ProductList() {
       <div className="row mb-4 mt-lg-3">
         <div className="d-none d-lg-block col-lg-3">
           <div className="border rounded shadow-sm">
-            <FilterMenuLeft />
+            <FilterMenuLeft
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              selectedBrands={selectedBrands}
+              onBrandToggle={(value) =>
+                toggleValue(selectedBrands, value, setSelectedBrands)
+              }
+              selectedManufacturers={selectedManufacturers}
+              onManufacturerToggle={(value) =>
+                toggleValue(selectedManufacturers, value, setSelectedManufacturers)
+              }
+              minPrice={minPrice}
+              maxPrice={maxPrice}
+              onMinPriceChange={setMinPrice}
+              onMaxPriceChange={setMaxPrice}
+              onApply={applyFilters}
+            />
           </div>
         </div>
         <div className="col-lg-9">
@@ -201,8 +299,10 @@ function ProductList() {
                     type="text"
                     placeholder="Search products..."
                     aria-label="search input"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                   />
-                  <button className="btn btn-outline-dark">
+                  <button className="btn btn-outline-dark" onClick={applyFilters}>
                     <FontAwesomeIcon icon={["fas", "search"]} />
                   </button>
                 </div>
@@ -222,20 +322,16 @@ function ProductList() {
                 (viewType.grid ? "row-cols-xl-3" : "row-cols-xl-2")
               }
             >
-              {Array.from({ length: 10 }, (_, i) => {
+              {filteredProducts.map((product, i) => {
                 if (viewType.grid) {
-                  return (
-                    <Product key={i} percentOff={i % 2 === 0 ? 15 : null} />
-                  );
+                  return <Product key={product.id} product={product} />;
                 }
-                return (
-                  <ProductH key={i} percentOff={i % 4 === 0 ? 15 : null} />
-                );
+                return <ProductH key={product.id} product={product} />;
               })}
             </div>
             <div className="d-flex align-items-center mt-auto">
               <span className="text-muted small d-none d-md-inline">
-                Showing 10 of 100
+                Showing {filteredProducts.length} of {PRODUCT_DATA.length}
               </span>
               <nav aria-label="Page navigation example" className="ms-auto">
                 <ul className="pagination my-0">

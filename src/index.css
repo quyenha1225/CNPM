@@ -10,12 +10,62 @@
     overflow-y: auto;
     visibility: hidden;
     background-color: #f8f9fa;
-    transition: transform 0.3s ease-in-out, visibility 0.3s ease-in-out;
+    transition: transform 0.2s ease-in-out, visibility 0.2s ease-in-out;
   }
   .offcanvas-collapse.open {
     visibility: visible;
     transform: translateX(-100%);
   }
+}
+
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.auth-panel {
+  width: min(100%, 440px);
+  background: #fff;
+  border-radius: 20px;
+  padding: 1.25rem;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 0.5rem;
+  background: #f4f5f7;
+  padding: 0.25rem;
+  border-radius: 999px;
+}
+
+.auth-tab {
+  border: 0;
+  background: transparent;
+  border-radius: 999px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.95rem;
+  color: #495057;
+}
+
+.auth-tab.active {
+  background: #111827;
+  color: #fff;
+}
+
+.navbar-nav .nav-link {
+  color: #374151;
+  transition: color 0.2s ease;
+}
+
+.navbar-nav .nav-link:hover {
+  color: #0d6efd;
 }
 
 .bg-custom-light {
