@@ -1,72 +1,137 @@
-import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import React, { useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import ScrollToTopOnMount from "../../template/ScrollToTopOnMount";
+import { addProductToCart } from "../../cart/cartStorage";
+import { menuCategories, mockProductsFromMySQL } from "../ProductList";
+import { getProductImage } from "../productImages";
 
-const mockProducts = [
-  { id: 1, name: "Điện thoại iPhone 15 Pro Max", price: "29.000.000", category: "DienThoai", description: "Màn hình 6.7 inch, chip A17 Pro siêu mạnh mẽ, camera 48MP sắc nét.", image: "https://via.placeholder.com/600x600", slug: "iphone-15-pro-max" },
-  { id: 2, name: "Laptop MacBook Air M2", price: "25.000.000", category: "Laptop", description: "Chip M2 mượt mà, thiết kế siêu mỏng nhẹ, pin dùng cả ngày.", image: "https://via.placeholder.com/600x600", slug: "macbook-air-m2" },
-  { id: 3, name: "Điện thoại Samsung Galaxy S24", price: "22.000.000", category: "DienThoai", description: "Tích hợp AI thông minh, viền siêu mỏng, thiết kế sang trọng.", image: "https://via.placeholder.com/600x600", slug: "samsung-galaxy-s24" },
-  { id: 4, name: "Laptop Asus Vivobook 14", price: "15.000.000", category: "Laptop", description: "Màn hình OLED rực rỡ, cấu hình phục vụ cực tốt cho học tập và làm việc.", image: "https://via.placeholder.com/600x600", slug: "asus-vivobook-14" }
-];
+const priceFormatter = new Intl.NumberFormat("vi-VN");
+
+function formatCurrency(value) {
+  return `${priceFormatter.format(Math.round(value))} đ`;
+}
 
 function ProductDetail() {
-  const { slug } = useParams();
-  const [product, setProduct] = useState(null);
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [cartMessage, setCartMessage] = useState("");
 
-  useEffect(() => {
-    const foundProduct = mockProducts.find(item => item.slug === slug);
-    setProduct(foundProduct);
-  }, [slug]);
+  const product = useMemo(() => {
+    return mockProductsFromMySQL.find((item) => String(item.id) === String(id));
+  }, [id]);
+
+  const categoryName = useMemo(() => {
+    if (!product) return "";
+    return menuCategories.find((item) => item.id === product.category)?.name || product.category;
+  }, [product]);
 
   if (!product) {
     return (
-      <div className="container mt-5 text-center">
-        <h2 className="text-danger mb-4">Sản phẩm không tồn tại!</h2>
-        <Link to="/products" className="btn btn-outline-dark px-4 py-2">
-          Quay lại danh sách
-        </Link>
+      <div className="product-detail-page">
+        <ScrollToTopOnMount />
+        <div className="container">
+          <div className="product-detail-empty">
+            <span>404</span>
+            <h1>Sản phẩm không tồn tại</h1>
+            <p>Sản phẩm này có thể đã ngừng bán hoặc đường dẫn chưa đúng.</p>
+            <Link to="/products" className="product-detail-primary-btn">
+              Quay lại danh sách
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="container mt-5 mb-5">
-      <Link to="/products" className="text-decoration-none text-dark mb-4 d-inline-block fw-bold">
-        ← Quay lại danh sách
-      </Link>
-      
-      <div className="row bg-white shadow-sm rounded p-4">
-        {/* Cột Trái: Ảnh sản phẩm */}
-        <div className="col-md-5 text-center mb-4 mb-md-0">
-          <img 
-            src={product.image} 
-            alt={product.name} 
-            className="img-fluid rounded border p-2"
-          />
-        </div>
+  const hasSale = product.percent_off > 0;
+  const salePrice = hasSale ? product.price - (product.percent_off * product.price) / 100 : product.price;
 
-        {/* Cột Phải: Thông tin chi tiết */}
-        <div className="col-md-7 d-flex flex-column justify-content-center px-lg-5">
-          <h2 className="fw-bold mb-3">{product.name}</h2>
-          <p className="fs-4 text-danger fw-bold mb-3">{product.price} ₫</p>
-          
-          <div className="mb-4">
-            <span className="badge bg-secondary me-2">Danh mục: {product.category}</span>
-            <span className="badge bg-success">Còn hàng</span>
+  function handleAddToCart() {
+    addProductToCart(product);
+    setCartMessage("Đã thêm sản phẩm vào giỏ hàng.");
+  }
+
+  function handleBuyNow() {
+    addProductToCart(product);
+    navigate("/cart");
+  }
+
+  return (
+    <div className="product-detail-page">
+      <ScrollToTopOnMount />
+      <div className="container">
+        <Link to="/products" className="product-detail-back">
+          <FontAwesomeIcon icon={["fas", "arrow-left"]} />
+          Quay lại danh sách
+        </Link>
+
+        <section className="product-detail-shell">
+          <div className="product-detail-media">
+            {hasSale && <span className="product-detail-sale">-{product.percent_off}%</span>}
+            <img
+              src={getProductImage(product)}
+              alt={product.name}
+              loading="eager"
+              decoding="async"
+            />
           </div>
-          
-          <p className="text-muted lh-lg mb-4 border-top pt-3">
-            <strong>Đặc điểm nổi bật:</strong> {product.description}
-          </p>
-          
-          <div className="d-flex gap-3 mt-auto">
-            <button className="btn btn-dark btn-lg flex-grow-1 py-3 rounded-1">
-              Thêm vào giỏ hàng
-            </button>
-            <button className="btn btn-outline-danger btn-lg flex-grow-1 py-3 rounded-1">
-              Mua ngay
-            </button>
+
+          <div className="product-detail-info">
+            <span className="product-detail-kicker">{categoryName}</span>
+            <h1>{product.name}</h1>
+
+            <div className="product-detail-price">
+              <strong>{formatCurrency(salePrice)}</strong>
+              {hasSale && <del>{formatCurrency(product.price)}</del>}
+            </div>
+
+            <div className="product-detail-tags">
+              <span>{product.brand || "Gearxin"}</span>
+              <span>Còn hàng</span>
+              <span>Bảo hành chính hãng</span>
+            </div>
+
+            <p className="product-detail-description">
+              Cấu hình được chọn cho nhu cầu học tập, làm việc, gaming và nâng cấp góc máy.
+              Gearxin hỗ trợ tư vấn linh kiện tương thích, tối ưu ngân sách và kiểm tra trước khi giao.
+            </p>
+
+            <div className="product-detail-specs">
+              <div>
+                <span>Danh mục</span>
+                <strong>{categoryName}</strong>
+              </div>
+              <div>
+                <span>Thương hiệu</span>
+                <strong>{product.brand || "Khác"}</strong>
+              </div>
+              <div>
+                <span>Ưu đãi</span>
+                <strong>{hasSale ? `${product.percent_off}%` : "Giá tốt"}</strong>
+              </div>
+            </div>
+
+            <div className="product-detail-actions">
+              <button type="button" className="product-detail-primary-btn" onClick={handleAddToCart}>
+                <FontAwesomeIcon icon={["fas", "cart-plus"]} />
+                Thêm vào giỏ
+              </button>
+              <button type="button" className="product-detail-secondary-btn" onClick={handleBuyNow}>
+                <FontAwesomeIcon icon={["fas", "shopping-bag"]} />
+                Mua ngay
+              </button>
+            </div>
+
+            {cartMessage && (
+              <div className="product-detail-cart-note" role="status">
+                <FontAwesomeIcon icon={["fas", "check-circle"]} />
+                <span>{cartMessage}</span>
+                <Link to="/cart">Xem giỏ hàng</Link>
+              </div>
+            )}
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useRef, useState } from "react";
 import logo from "../quyen-pc-logo.png";
+import { CART_UPDATED_EVENT, getCartCount } from "../cart/cartStorage";
 
 const categoryMap = {
   laptop: "Laptop",
@@ -14,6 +15,7 @@ const categoryMap = {
 function Header({ setCategory = () => {}, setBrand = () => {} }) {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(() => getCartCount());
   const categoryDropdownRef = useRef(null);
 
   useEffect(() => {
@@ -39,6 +41,21 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
     return () => {
       document.removeEventListener("mousedown", closeCategoryMenu);
       document.removeEventListener("keydown", closeCategoryMenuOnEscape);
+    };
+  }, []);
+
+  useEffect(() => {
+    function syncCartCount() {
+      setCartCount(getCartCount());
+    }
+
+    syncCartCount();
+    window.addEventListener(CART_UPDATED_EVENT, syncCartCount);
+    window.addEventListener("storage", syncCartCount);
+
+    return () => {
+      window.removeEventListener(CART_UPDATED_EVENT, syncCartCount);
+      window.removeEventListener("storage", syncCartCount);
     };
   }, []);
 
@@ -86,7 +103,7 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
             <Link to="/cart" className="eshop-action-item">
               <FontAwesomeIcon icon={["fas", "shopping-cart"]} />
               <span>Giỏ hàng</span>
-              <b>0</b>
+              <b>{cartCount}</b>
             </Link>
 
             <Link to="/login" className="eshop-user-btn">

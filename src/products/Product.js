@@ -1,60 +1,68 @@
+import { memo, useState } from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { addProductToCart } from "../cart/cartStorage";
+import { getProductImage } from "./productImages";
 
-function Product(props) {
-  // Lấy các trường dữ liệu động được truyền từ ProductList qua props
-  // Nếu không có ảnh từ database, sẽ dùng ảnh mặc định nillkin-case-1.jpg làm fallback
-  const { id, name, price, image_url, percent_off } = props.data;
+const priceFormatter = new Intl.NumberFormat("vi-VN");
 
-  let percentOffBadge;
-  let offPrice = `${price} VNĐ`;
+function formatCurrency(value) {
+  return `${priceFormatter.format(Math.round(value))} đ`;
+}
 
-  // Kiểm tra nếu sản phẩm có chương trình giảm giá (%)
-  if (percent_off && percent_off > 0) {
-    percentOffBadge = (
-      <div
-        className="badge bg-dim py-2 text-white position-absolute"
-        style={{ top: "0.5rem", right: "0.5rem" }}
-      >
-        {percent_off}% OFF
-      </div>
-    );
+function Product({ data, itemIndex = 0 }) {
+  const { id, name, price, category, brand, percent_off = 0 } = data;
+  const [isAdded, setIsAdded] = useState(false);
+  const hasSale = percent_off > 0;
+  const salePrice = hasSale ? price - (percent_off * price) / 100 : price;
 
-    offPrice = (
-      <>
-        <del className="text-muted">{price} VNĐ</del> {price - (percent_off * price) / 100} VNĐ
-      </>
-    );
+  function handleAddToCart() {
+    addProductToCart(data);
+    setIsAdded(true);
   }
 
   return (
-    <div className="col">
-      <div className="card shadow-sm h-100">
-        {/* Đường dẫn động chuyển hướng tới đúng ID của sản phẩm đó */}
-        <Link to={`/products/${id}`} replace>
-          {percentOffBadge}
+    <div className="col product-grid-item" style={{ "--item-index": itemIndex }}>
+      <article className="product-card h-100">
+        <Link to={`/products/${id}`} className="product-card-media" replace>
+          {hasSale && <span className="product-discount-badge">-{percent_off}%</span>}
           <img
-            className="card-img-top bg-dark cover"
-            height="200"
+            className="product-card-image"
             alt={name}
-            // Ưu tiên hiển thị đường dẫn ảnh từ MySQL, nếu lỗi/trống sẽ dùng ảnh tĩnh trong thư mục
-            src={image_url || require("../nillkin-case-1.jpg")}
+            src={getProductImage(data)}
+            loading="lazy"
+            decoding="async"
           />
         </Link>
-        <div className="card-body d-flex flex-column justify-content-between">
-          <h5 className="card-title text-center text-dark text-truncate" title={name}>
-            {name} {/* Tên sản phẩm động */}
-          </h5>
-          <p className="card-text text-center text-muted mb-0">{offPrice}</p>
-          <div className="d-grid d-block">
-            <button className="btn btn-outline-dark mt-3">
-              <FontAwesomeIcon icon={["fas", "cart-plus"]} /> Add to cart
+
+        <div className="product-card-body">
+          <div className="product-card-meta">
+            <span>{brand || category}</span>
+            {hasSale && <strong>Sale</strong>}
+          </div>
+
+          <h2 className="product-card-title" title={name}>
+            {name}
+          </h2>
+
+          <div className="product-price-row">
+            <strong>{formatCurrency(salePrice)}</strong>
+            {hasSale && <del>{formatCurrency(price)}</del>}
+          </div>
+
+          <div className="product-card-actions">
+            <Link to={`/products/${id}`} className="product-card-detail-btn" replace>
+              Chi tiết
+            </Link>
+            <button type="button" className="product-card-btn" onClick={handleAddToCart}>
+              <FontAwesomeIcon icon={["fas", isAdded ? "check" : "cart-plus"]} />
+              <span>{isAdded ? "Đã thêm" : "Thêm"}</span>
             </button>
           </div>
         </div>
-      </div>
+      </article>
     </div>
   );
 }
 
-export default Product;
+export default memo(Product);

@@ -48,13 +48,16 @@ function BannerImage(props) {
       className={"carousel-item " + (props.active ? "active" : "")}
       data-bs-interval="5000"
     >
-      <div className="ratio home-banner-ratio">
+      <div className="ratio home-banner-ratio home-tech-hero">
         <img
           className="d-block w-100 h-100 bg-dark cover home-banner-image"
           alt={props.title}
           src={props.image}
         />
         <div className="home-banner-overlay" />
+        <div className="home-tech-grid" aria-hidden="true" />
+        <div className="home-tech-orbit home-tech-orbit-one" aria-hidden="true" />
+        <div className="home-tech-orbit home-tech-orbit-two" aria-hidden="true" />
       </div>
 
       <div className="home-banner-caption">
@@ -62,12 +65,27 @@ function BannerImage(props) {
         <h1 className="home-banner-title">{props.title}</h1>
         <p className="home-banner-text">{props.text}</p>
         <div className="home-hero-actions">
-          <Link to={props.to} className="btn btn-warning btn-lg fw-bold">
+          <Link to={props.to} className="btn btn-warning btn-lg fw-bold home-primary-cta">
             {props.action}
           </Link>
-          <Link to="/about" className="btn btn-outline-light btn-lg">
+          <Link to="/about" className="btn btn-outline-light btn-lg home-secondary-cta">
             Liên hệ tư vấn
           </Link>
+        </div>
+
+        <div className="home-hero-metrics" aria-label="Thông tin nổi bật">
+          <span>
+            <strong>100+</strong>
+            cấu hình
+          </span>
+          <span>
+            <strong>24h</strong>
+            tư vấn
+          </span>
+          <span>
+            <strong>4.9/5</strong>
+            đánh giá
+          </span>
         </div>
       </div>
     </div>
