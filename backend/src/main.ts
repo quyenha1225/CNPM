@@ -11,6 +11,7 @@ async function bootstrap() {
   });
 
   // Chạy backend ở port 3001 để tránh trùng với ReactJS
+  app.setGlobalPrefix('api');
   await app.listen(3001);
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
