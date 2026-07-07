@@ -39,6 +39,7 @@ function App() {
   return (
     <Template setCategory={setCurrentCategory} setBrand={setCurrentBrand}>
       <Routes>
+
         {/* 1. ĐƯA TRANG LANDING CŨ VỀ LÀM TRANG CHỦ MẶC ĐỊNH (/) */}
         <Route path="/" element={<Landing />} />
         

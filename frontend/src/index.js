@@ -5,6 +5,7 @@ import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import { CartProvider } from "./context/CartContext";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { fas } from "@fortawesome/free-solid-svg-icons";
 import { far } from "@fortawesome/free-regular-svg-icons";
@@ -16,6 +17,8 @@ const container = document.getElementById("root");
 const root = createRoot(container);
 root.render(
   <Router>
-    <App />
+    <CartProvider>
+      <App />
+    </CartProvider>
   </Router>
 );

@@ -1,8 +1,10 @@
 import Image from "../nillkin-case-1.jpg";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useCart } from "../context/CartContext";
 
 function ProductH(props) {
+  const { addToCart } = useCart();
   const price = 10000;
   let percentOff;
   let offPrice = `${price}Ks`;
@@ -23,6 +25,17 @@ function ProductH(props) {
       </>
     );
   }
+
+  const handleAddToCart = () => {
+    addToCart({
+      id: props.id || 1,
+      name: "Nillkin iPhone X cover",
+      price: price,
+      quantity: 1,
+    });
+    alert("Sản phẩm đã được thêm vào giỏ hàng!");
+  };
+
   return (
     <div className="col">
       <div className="card shadow-sm">
@@ -47,7 +60,10 @@ function ProductH(props) {
                   {offPrice}
                 </span>
                 <div className="mt-auto d-flex">
-                  <button className="btn btn-outline-dark ms-auto">
+                  <button 
+                    className="btn btn-outline-dark ms-auto"
+                    onClick={handleAddToCart}
+                  >
                     <FontAwesomeIcon icon={["fas", "cart-plus"]} /> Add to cart
                   </button>
                 </div>

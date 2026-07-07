@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useRef, useState } from "react";
+import { useCart } from "../context/CartContext";
 import logo from "../quyen-pc-logo.png";
 
 const categoryMap = {
@@ -12,8 +13,10 @@ const categoryMap = {
 };
 
 function Header({ setCategory = () => {}, setBrand = () => {} }) {
+  const { getTotalItems, cartItems } = useCart();
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
   const categoryDropdownRef = useRef(null);
 
   useEffect(() => {
@@ -41,6 +44,10 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
       document.removeEventListener("keydown", closeCategoryMenuOnEscape);
     };
   }, []);
+
+  useEffect(() => {
+    setCartCount(getTotalItems());
+  }, [cartItems, getTotalItems]);
 
   function closeMenus() {
     setIsCategoryOpen(false);
@@ -72,7 +79,7 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
               type="text"
               placeholder="Tìm điện thoại, laptop, phụ kiện..."
             />
-            <button>
+            <button type="button">
               <FontAwesomeIcon icon={["fas", "search"]} />
             </button>
           </div>
@@ -86,7 +93,8 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
             <Link to="/cart" className="eshop-action-item">
               <FontAwesomeIcon icon={["fas", "shopping-cart"]} />
               <span>Giỏ hàng</span>
-              <b>0</b>
+
+              <b>{cartCount}</b>
             </Link>
 
             <Link to="/login" className="eshop-user-btn">
@@ -209,7 +217,7 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
             className="eshop-nav-mobile-link"
             onClick={closeMenus}
           >
-            Giỏ hàng
+            Giỏ hàng ({getTotalItems()})
           </Link>
           <Link
             to="/login"
