@@ -3,7 +3,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "../context/CartContext";
 import logo from "../quyen-pc-logo.png";
-import { CART_UPDATED_EVENT, getCartCount } from "../cart/cartStorage";
 
 const categoryMap = {
   laptop: "Laptop",
@@ -14,10 +13,10 @@ const categoryMap = {
 };
 
 function Header({ setCategory = () => {}, setBrand = () => {} }) {
-  const { getTotalItems } = useCart();
+  const { getTotalItems, cartItems } = useCart();
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(() => getCartCount());
+  const [cartCount, setCartCount] = useState(0);
   const categoryDropdownRef = useRef(null);
 
   useEffect(() => {
@@ -47,19 +46,8 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
   }, []);
 
   useEffect(() => {
-    function syncCartCount() {
-      setCartCount(getCartCount());
-    }
-
-    syncCartCount();
-    window.addEventListener(CART_UPDATED_EVENT, syncCartCount);
-    window.addEventListener("storage", syncCartCount);
-
-    return () => {
-      window.removeEventListener(CART_UPDATED_EVENT, syncCartCount);
-      window.removeEventListener("storage", syncCartCount);
-    };
-  }, []);
+    setCartCount(getTotalItems());
+  }, [cartItems, getTotalItems]);
 
   function closeMenus() {
     setIsCategoryOpen(false);
