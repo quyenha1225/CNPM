@@ -4,10 +4,6 @@ import Template from "./template/Template";
 import ProductDetail from "./products/detail/ProductDetail";
 import Landing from "./landing/Landing"; // Trang chủ mặc định ban đầu của bạn
 import ProductList from "./products/ProductList";
-import Cart from "./cart/Cart";
-import Login from "./auth/Login";
-import Register from "./auth/Register";
-import ForgotPassword from "./auth/ForgotPassword";
 
 const categorySlugMap = {
   laptop: "Laptop",
@@ -74,11 +70,6 @@ function App() {
 
         {/* Trang chi tiết sản phẩm */}
         <Route path="/products/:id" element={<ProductDetail />} />
-
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
         
         {/* Trang Giới thiệu */}
         <Route

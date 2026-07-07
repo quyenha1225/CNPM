@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Product from "./Product";
 
 // 1. CÂY DANH MỤC SIDEBAR BÊN TRÁI
-const menuCategories = [
+export const menuCategories = [
   { id: "PC_ChuyenDung", name: "PC Chuyên Dụng" },
   { id: "PC_Gaming", name: "PC Gaming, Học Tập" },
   { id: "PC_VanPhong", name: "PC Văn Phòng" },
@@ -151,17 +151,35 @@ export const mockProductsFromMySQL = [
   { id: 100, name: "Loa Máy Tính Logitech Z407 Bluetooth Có Loa Trầm Đỉnh Cao", price: 2190000, category: "GamingGear", brand: "Logitech", image_url: "", percent_off: 5 }
 ];
 
-function ProductList({ category, setCategory, brand, setBrand }) {
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [priceRange, setPriceRange] = useState("");
-  const [currentPage, setCurrentPage] = useState(0); 
-  const productsPerPage = 8; 
+const brandOptions = [
+  "Apple",
+  "Asus",
+  "Samsung",
+  "Intel",
+  "AMD",
+  "MSI",
+  "Logitech",
+  "Corsair",
+];
 
-  const filterMockData = () => {
-    const filtered = mockProductsFromMySQL.filter((item) => {
+const priceOptions = [
+  { value: "", label: "Tất cả mức giá" },
+  { value: "duoi10", label: "Dưới 10 triệu" },
+  { value: "10den20", label: "Từ 10 - 20 triệu" },
+  { value: "tren20", label: "Trên 20 triệu" },
+];
+
+function ProductList({ category, setCategory, brand, setBrand }) {
+  const [priceRange, setPriceRange] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsTopRef = useRef(null);
+  const productsPerPage = 12;
+
+  const filteredProducts = useMemo(() => {
+    return mockProductsFromMySQL.filter((item) => {
       const matchCategory = category === "" || item.category === category;
       const matchBrand = brand === "" || item.brand === brand;
-      
+
       let matchPrice = true;
       if (priceRange === "duoi10") matchPrice = item.price < 10000000;
       else if (priceRange === "10den20") matchPrice = item.price >= 10000000 && item.price <= 20000000;
@@ -169,128 +187,211 @@ function ProductList({ category, setCategory, brand, setBrand }) {
 
       return matchCategory && matchBrand && matchPrice;
     });
-
-    setFilteredProducts(filtered);
-    setCurrentPage(0); 
-  };
-
-  useEffect(() => {
-    filterMockData();
   }, [category, brand, priceRange]);
 
-  const indexOfLastProduct = (currentPage + 1) * productsPerPage;
-  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProductsToShow = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
-  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+  const categoryCounts = useMemo(() => {
+    return mockProductsFromMySQL.reduce((counts, item) => {
+      counts[item.category] = (counts[item.category] || 0) + 1;
+      return counts;
+    }, {});
+  }, []);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / productsPerPage));
+  const indexOfFirstProduct = (currentPage - 1) * productsPerPage;
+  const indexOfLastProduct = indexOfFirstProduct + productsPerPage;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [category, brand, priceRange]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const currentProductsToShow = useMemo(() => {
+    return filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+  }, [filteredProducts, indexOfFirstProduct, indexOfLastProduct]);
+
+  const selectedCategoryName = useMemo(() => {
+    return menuCategories.find((menu) => menu.id === category)?.name || "Tất cả sản phẩm";
+  }, [category]);
+
+  const pageNumbers = useMemo(() => {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }, [totalPages]);
+
+  function changePage(nextPage) {
+    const safePage = Math.min(Math.max(nextPage, 1), totalPages);
+    setCurrentPage(safePage);
+
+    window.requestAnimationFrame(() => {
+      productsTopRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }
+
+  function resetFilters() {
+    setCategory("");
+    setBrand("");
+    setPriceRange("");
+  }
 
   return (
-    <div className="container-fluid mt-4 mb-5 px-4">
-      
-      {/* BỘ LỌC NGANG */}
-      <div className="row mb-4">
-        <div className="col-12">
-          <h4 className="fw-bold text-uppercase mb-3" style={{ borderLeft: "5px solid #000080", paddingLeft: "10px", color: "#000" }}>
-            Tất cả sản phẩm
-          </h4>
-          <p className="text-muted mb-2">Bộ lọc sản phẩm</p>
-          
-          <div className="d-flex gap-3">
-            <select className="form-select w-auto shadow-sm" value={priceRange} onChange={(e) => setPriceRange(e.target.value)}>
-              <option value="">Chọn mức giá</option>
-              <option value="duoi10">Dưới 10 triệu</option>
-              <option value="10den20">Từ 10 - 20 triệu</option>
-              <option value="tren20">Trên 20 triệu</option>
-            </select>
-
-            <select className="form-select w-auto shadow-sm" value={category} onChange={(e) => setCategory(e.target.value)}>
-              <option value="">Loại</option>
-              {menuCategories.map(menu => (
-                <option key={menu.id} value={menu.id}>{menu.name}</option>
-              ))}
-            </select>
-
-            <select className="form-select w-auto shadow-sm" value={brand} onChange={(e) => setBrand(e.target.value)}>
-              <option value="">Thương hiệu</option>
-              <option value="Apple">Apple</option>
-              <option value="Asus">Asus</option>
-              <option value="Samsung">Samsung</option>
-              <option value="Intel">Intel</option>
-              <option value="AMD">AMD</option>
-              <option value="MSI">MSI</option>
-              <option value="Logitech">Logitech</option>
-              <option value="Corsair">Corsair</option>
-            </select>
-          </div>
+    <div className="product-page container-fluid mb-5 px-3 px-lg-4" ref={productsTopRef}>
+      <div className="product-toolbar">
+        <div>
+          <span className="product-eyebrow">Gearxin Store</span>
+          <h1 className="product-page-title">{selectedCategoryName}</h1>
+          <p className="product-page-subtitle">
+            {filteredProducts.length} sản phẩm phù hợp, hiển thị {currentProductsToShow.length} sản phẩm mỗi trang.
+          </p>
         </div>
+
+        <button type="button" className="product-reset-btn" onClick={resetFilters}>
+          Xóa lọc
+        </button>
       </div>
 
-      <div className="row">
-        {/* SIDEBAR TRÁI */}
-        <div className="col-md-3 mb-4">
-          <div className="card shadow-sm border-0 rounded-0">
-            <div className="list-group list-group-flush">
+      <div className="product-filter-panel">
+        <label>
+          <span>Mức giá</span>
+          <select className="form-select" value={priceRange} onChange={(e) => setPriceRange(e.target.value)}>
+            {priceOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          <span>Loại sản phẩm</span>
+          <select className="form-select" value={category} onChange={(e) => setCategory(e.target.value)}>
+            <option value="">Tất cả danh mục</option>
+            {menuCategories.map((menu) => (
+              <option key={menu.id} value={menu.id}>
+                {menu.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          <span>Thương hiệu</span>
+          <select className="form-select" value={brand} onChange={(e) => setBrand(e.target.value)}>
+            <option value="">Tất cả thương hiệu</option>
+            {brandOptions.map((brandName) => (
+              <option key={brandName} value={brandName}>
+                {brandName}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="row g-4 product-content-row">
+        <div className="col-lg-3">
+          <aside className="product-sidebar">
+            <div className="product-sidebar-title">Danh mục</div>
+            <div className="product-category-list">
               <button
                 type="button"
-                className={`list-group-item list-group-item-action fw-bold py-2 ${category === "" ? "text-primary" : "text-dark"}`}
-                onClick={() => { setCategory(""); setBrand(""); }}
+                className={`product-category-btn ${category === "" ? "is-active" : ""}`}
+                onClick={() => {
+                  setCategory("");
+                  setBrand("");
+                }}
               >
-                Tất cả sản phẩm
+                <span>Tất cả sản phẩm</span>
+                <small>{mockProductsFromMySQL.length}</small>
               </button>
-              
+
               {menuCategories.map((menu) => (
                 <button
                   key={menu.id}
                   type="button"
-                  className={`list-group-item list-group-item-action border-0 py-1 d-flex justify-content-between align-items-center ${category === menu.id ? "text-primary fw-bold" : "text-muted"}`}
-                  onClick={() => { setCategory(menu.id); setBrand(""); }}
-                  style={{ fontSize: "15px" }}
+                  className={`product-category-btn ${category === menu.id ? "is-active" : ""}`}
+                  onClick={() => {
+                    setCategory(menu.id);
+                    setBrand("");
+                  }}
                 >
                   <span>{menu.name}</span>
-                  <small>›</small>
+                  <small>{categoryCounts[menu.id] || 0}</small>
                 </button>
               ))}
             </div>
-          </div>
+          </aside>
         </div>
 
-        {/* LƯỚI SẢN PHẨM */}
-        <div className="col-md-9 d-flex flex-column justify-content-between">
-          <div>
-            <div className="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+        <div className="col-lg-9">
+          <div className="product-grid-shell">
+            <div className="product-grid-head">
+              <div>
+                <strong>Trang {currentPage}/{totalPages}</strong>
+                <span>
+                  Sản phẩm {filteredProducts.length === 0 ? 0 : indexOfFirstProduct + 1}
+                  -{Math.min(indexOfLastProduct, filteredProducts.length)} trong {filteredProducts.length}
+                </span>
+              </div>
+            </div>
+
+            <div className="row row-cols-1 row-cols-sm-2 row-cols-xl-3 row-cols-xxl-4 g-4 product-grid-page" key={currentPage}>
               {currentProductsToShow.length > 0 ? (
-                currentProductsToShow.map((item) => (
-                  <Product key={item.id} data={item} />
+                currentProductsToShow.map((item, index) => (
+                  <Product key={item.id} data={item} itemIndex={index} />
                 ))
               ) : (
-                <div className="col-12 text-center mt-5">
-                  <p className="text-muted fs-5">Không có sản phẩm nào khớp với bộ lọc của bạn.</p>
+                <div className="col-12">
+                  <div className="product-empty-state">
+                    <strong>Không tìm thấy sản phẩm</strong>
+                    <p>Hãy thử đổi mức giá, danh mục hoặc thương hiệu khác.</p>
+                  </div>
                 </div>
               )}
             </div>
-          </div>
 
-          {/* DẤU CHẤM TRÒN PHÂN TRANG */}
-          {totalPages > 1 && (
-            <div className="d-flex justify-content-center align-items-center gap-2 mt-5">
-              {[...Array(totalPages)].map((_, index) => (
+            {totalPages > 1 && (
+              <nav className="product-pagination" aria-label="Phân trang sản phẩm">
                 <button
-                  key={index}
                   type="button"
-                  onClick={() => setCurrentPage(index)}
-                  style={{
-                    width: index === currentPage ? "30px" : "10px",
-                    height: "10px",
-                    borderRadius: "5px",
-                    border: "none",
-                    backgroundColor: index === currentPage ? "#000080" : "#cccccc",
-                    transition: "all 0.3s ease",
-                    cursor: "pointer"
-                  }}
-                  title={`Trang ${index + 1}`}
-                />
-              ))}
-            </div>
-          )}
+                  className="product-page-btn"
+                  disabled={currentPage === 1}
+                  onClick={() => changePage(currentPage - 1)}
+                >
+                  Trước
+                </button>
+
+                <div className="product-page-numbers">
+                  {pageNumbers.map((page) => (
+                    <button
+                      key={page}
+                      type="button"
+                      className={`product-page-dot ${page === currentPage ? "is-active" : ""}`}
+                      onClick={() => changePage(page)}
+                      aria-label={`Trang ${page}`}
+                      aria-current={page === currentPage ? "page" : undefined}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  className="product-page-btn"
+                  disabled={currentPage === totalPages}
+                  onClick={() => changePage(currentPage + 1)}
+                >
+                  Sau
+                </button>
+              </nav>
+            )}
+          </div>
         </div>
       </div>
     </div>
