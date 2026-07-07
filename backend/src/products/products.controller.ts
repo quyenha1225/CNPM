@@ -1,8 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
+import { ProductsService } from './products.service';
+
 @Controller('products')
 export class ProductsController {
-  @Get('test')
-  testProducts() {
-    return { message: 'Products API is working!' };
+  constructor(private readonly productsService: ProductsService) {}
+
+  @Get()
+  async getAllProducts() {
+    return await this.productsService.findAll();
   }
 }

@@ -11,7 +11,13 @@ function formatPrice(price) {
 function Product({ data }) {
   const { addToCart } = useCart();
   const { id, name, price, image_url, percent_off } = data;
-  const image = image_url || fallbackImage;
+  let image = fallbackImage;
+  if (image_url) {
+    // Tự động nối thêm /react-ecommerce vào trước link ảnh local
+    image = image_url.startsWith("/") 
+      ? process.env.PUBLIC_URL + image_url 
+      : image_url;
+  }
   const finalPrice = percent_off
     ? price - (percent_off * price) / 100
     : price;

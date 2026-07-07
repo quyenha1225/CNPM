@@ -1,9 +1,9 @@
+import React, { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import ScrollToTopOnMount from "../../template/ScrollToTopOnMount";
 import { useCart } from "../../context/CartContext";
 import { toast } from "../../utils/Toast";
 import fallbackImage from "../../nillkin-case-1.jpg";
-import { mockProductsFromMySQL } from "../ProductList";
 
 function formatPrice(price) {
   return new Intl.NumberFormat("vi-VN").format(price) + " đ";
@@ -13,15 +13,53 @@ function getDiscountedPrice(product) {
   if (!product.percent_off) {
     return product.price;
   }
-
   return product.price - (product.percent_off * product.price) / 100;
 }
 
 function ProductDetail() {
   const { id } = useParams();
   const { addToCart } = useCart();
-  const product = mockProductsFromMySQL.find((item) => String(item.id) === id);
+  
+  // Khai báo state để lưu dữ liệu sản phẩm và trạng thái loading
+  const [product, setProduct] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Gọi API để lấy thông tin sản phẩm
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setIsLoading(true);
+        // Gọi API danh sách sản phẩm
+        const response = await fetch("http://localhost:3001/api/products");
+        const data = await response.json();
+        
+        // Tìm sản phẩm có id khớp với param id trên URL
+        const foundProduct = data.find((item) => String(item.id) === String(id));
+        setProduct(foundProduct);
+      } catch (error) {
+        console.error("Lỗi khi tải chi tiết sản phẩm:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
+
+  // Hiển thị loading trong lúc đợi API trả về
+  if (isLoading) {
+    return (
+      <>
+        <ScrollToTopOnMount />
+        <div className="container mt-5 text-center py-5">
+          <div className="spinner-border text-primary" role="status"></div>
+          <p className="mt-3">Đang tải thông tin sản phẩm...</p>
+        </div>
+      </>
+    );
+  }
+
+  // Hiển thị nếu không tìm thấy sản phẩm
   if (!product) {
     return (
       <>
@@ -36,7 +74,12 @@ function ProductDetail() {
     );
   }
 
-  const productImage = product.image_url || fallbackImage;
+  let productImage = fallbackImage;
+  if (product.image_url) {
+    productImage = product.image_url.startsWith("/") 
+      ? process.env.PUBLIC_URL + product.image_url 
+      : product.image_url;
+  }
   const finalPrice = getDiscountedPrice(product);
 
   const handleAddToCart = () => {
