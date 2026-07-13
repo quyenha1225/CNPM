@@ -4,6 +4,8 @@ import FeatureProduct, { featuredProducts } from "./FeatureProduct";
 import ScrollToTopOnMount from "../template/ScrollToTopOnMount";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "react-router-dom";
+import FlashSale from "./FlashSale";
+
 
 function Landing() {
   const featuredPerPage = 6;
@@ -39,6 +41,9 @@ function Landing() {
       <Banner />
 
       <section className="home-category-strip home-reveal-section">
+        <div className="container px-lg-5">
+          <FlashSale />
+        </div>
       </section>
 
       <section className="home-products bg-light home-reveal-section">

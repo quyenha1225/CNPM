@@ -1,241 +1,184 @@
-﻿import { useCart } from "../context/CartContext";
+
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import Image from "../nillkin-case-1.jpg";
-import "./cart.css";
+import ScrollToTopOnMount from "../template/ScrollToTopOnMount";
+import { mockProductsFromMySQL } from "../products/ProductList";
+import { getProductImage } from "../products/productImages";
+import { getCartItems, saveCartItems } from "./cartStorage";
+
+const priceFormatter = new Intl.NumberFormat("vi-VN");
+
+function formatCurrency(value) {
+  return `${priceFormatter.format(Math.round(value))} đ`;
+}
+
+function getSalePrice(product) {
+  return product.percent_off > 0
+    ? product.price - (product.percent_off * product.price) / 100
+    : product.price;
+}
 
 function Cart() {
-  const { cartItems, removeFromCart, updateQuantity, getTotalPrice } = useCart();
+  const [cartItems, setCartItems] = useState(() => getCartItems());
+  const [orderStatus, setOrderStatus] = useState("");
 
-  const handleQuantityChange = (productId, newQuantity) => {
-    if (newQuantity > 0) {
-      updateQuantity(productId, newQuantity);
-    }
-  };
+  const productMap = useMemo(() => {
+    return new Map(mockProductsFromMySQL.map((product) => [product.id, product]));
+  }, []);
 
-  const handleRemoveItem = (productId) => {
-    removeFromCart(productId);
-  };
+  const cartRows = useMemo(() => {
+    return cartItems
+      .map((item) => {
+        const product = productMap.get(item.id);
+        if (!product) return null;
 
-  if (cartItems.length === 0) {
-    return (
-      <div className="container cart-container">
-        <div className="row justify-content-center">
-          <div className="col-md-8">
-            <div className="empty-cart-container">
-              <div className="empty-cart-icon">
-                <FontAwesomeIcon icon={["fas", "shopping-cart"]} />
-              </div>
-              <h2 className="empty-cart-title">Giỏ hàng của bạn trống</h2>
-              <p className="empty-cart-text">
-                Hãy thêm một số sản phẩm vào giỏ hàng của bạn để bắt đầu mua sắm!
-              </p>
-              <Link to="/products" className="empty-cart-btn">
-                <FontAwesomeIcon icon={["fas", "arrow-left"]} /> Tiếp tục mua sắm
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+        const salePrice = getSalePrice(product);
+
+        return {
+          ...item,
+          product,
+          salePrice,
+          lineTotal: salePrice * item.quantity,
+          originalTotal: product.price * item.quantity,
+        };
+      })
+      .filter(Boolean);
+  }, [cartItems, productMap]);
+
+  const subtotal = cartRows.reduce((total, item) => total + item.lineTotal, 0);
+  const originalTotal = cartRows.reduce((total, item) => total + item.originalTotal, 0);
+  const savedTotal = Math.max(0, originalTotal - subtotal);
+
+  function syncCart(nextItems) {
+    setCartItems(nextItems);
+    saveCartItems(nextItems);
+  }
+
+  function updateQuantity(productId, quantity) {
+    const safeQuantity = Math.max(1, quantity);
+    syncCart(
+      cartItems.map((item) =>
+        item.id === productId ? { ...item, quantity: safeQuantity } : item
+      )
     );
   }
 
-  const totalPrice = getTotalPrice();
-  const shippingCost = 30000; // Phí vận chuyển cố định
-  const finalTotal = totalPrice + shippingCost;
+  function removeItem(productId) {
+    syncCart(cartItems.filter((item) => item.id !== productId));
+  }
+
+  function checkout() {
+    syncCart([]);
+    setOrderStatus("Đã tiếp nhận đơn hàng. Gearxin sẽ liên hệ xác nhận trong ít phút.");
+  }
 
   return (
-    <div className="container cart-container">
-      <div className="row mb-4">
-        <div className="col-md-8">
-          <div className="cart-header">
-            <FontAwesomeIcon icon={["fas", "shopping-cart"]} style={{ marginRight: "12px", fontSize: "1.5rem", color: "#667eea" }} />
-            <h2>Giỏ hàng của bạn</h2>
+    <div className="cart-page">
+      <ScrollToTopOnMount />
+
+      <div className="container">
+        <div className="cart-heading">
+          <div>
+            <span className="cart-kicker">Giỏ hàng</span>
+            <h1>Sản phẩm đã chọn</h1>
+            <p>Kiểm tra sản phẩm top bạn vừa chọn trước khi đặt hàng.</p>
           </div>
 
-          {/* Bảng sản phẩm */}
-          <div className="cart-table-responsive">
-            <table className="table cart-table">
-              <thead>
-                <tr>
-                  <th>Sản phẩm</th>
-                  <th>Giá</th>
-                  <th>Số lượng</th>
-                  <th>Tổng</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {cartItems.map((item) => (
-                  <tr key={item.id}>
-                    <td>
-                      <div className="product-info">
-                        <img
-                          src={Image}
-                          alt={item.name}
-                          className="product-image"
-                        />
-                        <div className="product-details">
-                          <h6>{item.name}</h6>
-                          <small>ID: {item.id}</small>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="price-cell">{item.price.toLocaleString()}đ</div>
-                    </td>
-                    <td>
-                      <div className="quantity-input-group">
-                        <button
-                          className="btn btn-outline-secondary btn-sm"
-                          type="button"
-                          onClick={() =>
-                            handleQuantityChange(item.id, item.quantity - 1)
-                          }
-                        >
-                          <FontAwesomeIcon icon={["fas", "minus"]} />
-                        </button>
-                        <input
-                          type="number"
-                          className="form-control"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            handleQuantityChange(
-                              item.id,
-                              parseInt(e.target.value) || 1
-                            )
-                          }
-                          min="1"
-                        />
-                        <button
-                          className="btn btn-outline-secondary btn-sm"
-                          type="button"
-                          onClick={() =>
-                            handleQuantityChange(item.id, item.quantity + 1)
-                          }
-                        >
-                          <FontAwesomeIcon icon={["fas", "plus"]} />
-                        </button>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="total-cell">
-                        {(item.price * item.quantity).toLocaleString()}đ
-                      </div>
-                    </td>
-                    <td>
-                      <button
-                        className="btn btn-sm remove-btn"
-                        onClick={() => handleRemoveItem(item.id)}
-                        title="Xóa sản phẩm"
-                      >
-                        <FontAwesomeIcon icon={["fas", "trash"]} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Link to="/products" className="cart-continue-link">
+            <FontAwesomeIcon icon={["fas", "arrow-left"]} />
+            Tiếp tục mua sắm
+          </Link>
+        </div>
 
-          {/* Nút tiếp tục mua sắm */}
-          <div className="continue-shopping">
-            <Link to="/products" className="btn btn-outline-primary">
-              <FontAwesomeIcon icon={["fas", "arrow-left"]} /> Tiếp tục mua sắm
+        {orderStatus && (
+          <div className="cart-status" role="status">
+            <FontAwesomeIcon icon={["fas", "check-circle"]} />
+            <span>{orderStatus}</span>
+          </div>
+        )}
+
+        {cartRows.length === 0 ? (
+          <section className="cart-empty">
+            <FontAwesomeIcon icon={["fas", "shopping-cart"]} />
+            <h2>Giỏ hàng đang trống</h2>
+            <p>Chọn một sản phẩm nổi bật hoặc xem danh sách sản phẩm để thêm vào giỏ.</p>
+            <Link to="/" className="cart-primary-link">
+              Xem sản phẩm nổi bật
             </Link>
-          </div>
-        </div>
+          </section>
+        ) : (
+          <div className="cart-layout">
+            <section className="cart-list" aria-label="Sản phẩm trong giỏ">
+              {cartRows.map(({ product, quantity, salePrice, lineTotal }) => (
+                <article className="cart-item" key={product.id}>
+                  <Link to={`/products/${product.id}`} className="cart-item-media">
+                    <img src={getProductImage(product)} alt={product.name} />
+                  </Link>
 
-        {/* Bản tóm tắt đơn hàng */}
-        <div className="col-md-4">
-          <div className="order-summary">
-            <div className="summary-header">
-              <h5>Tóm tắt đơn hàng</h5>
-            </div>
-            <div className="summary-body">
-              {/* Tổng tiền hàng */}
-              <div className="summary-row">
-                <span className="summary-label">Tổng tiền hàng:</span>
-                <span className="summary-value">
-                  {totalPrice.toLocaleString()}đ
-                </span>
+                  <div className="cart-item-info">
+                    <span>{product.brand || product.category}</span>
+                    <h2>
+                      <Link to={`/products/${product.id}`}>{product.name}</Link>
+                    </h2>
+                    <strong>{formatCurrency(salePrice)}</strong>
+                  </div>
+
+                  <div className="cart-quantity-control" aria-label="Số lượng">
+                    <button
+                      type="button"
+                      aria-label={`Giảm số lượng ${product.name}`}
+                      disabled={quantity === 1}
+                      onClick={() => updateQuantity(product.id, quantity - 1)}
+                    >
+                      <FontAwesomeIcon icon={["fas", "minus"]} />
+                    </button>
+                    <strong>{quantity}</strong>
+                    <button
+                      type="button"
+                      aria-label={`Tăng số lượng ${product.name}`}
+                      onClick={() => updateQuantity(product.id, quantity + 1)}
+                    >
+                      <FontAwesomeIcon icon={["fas", "plus"]} />
+                    </button>
+                  </div>
+
+                  <div className="cart-item-total">
+                    <strong>{formatCurrency(lineTotal)}</strong>
+                    <button type="button" onClick={() => removeItem(product.id)}>
+                      <FontAwesomeIcon icon={["fas", "trash-alt"]} />
+                      Xóa
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </section>
+
+            <aside className="cart-summary" aria-label="Tóm tắt đơn hàng">
+              <h2>Tóm tắt đơn hàng</h2>
+              <div>
+                <span>Tạm tính</span>
+                <strong>{formatCurrency(subtotal)}</strong>
               </div>
-
-              {/* Số lượng sản phẩm */}
-              <div className="summary-row">
-                <span className="summary-label">Số lượng sản phẩm:</span>
-                <span className="summary-value">{cartItems.length} loại</span>
+              <div>
+                <span>Tiết kiệm</span>
+                <strong>{formatCurrency(savedTotal)}</strong>
               </div>
-
-              {/* Phí vận chuyển */}
-              <div className="summary-row">
-                <span className="summary-label">Phí vận chuyển:</span>
-                <span className="summary-value">
-                  {shippingCost.toLocaleString()}đ
-                </span>
+              <div>
+                <span>Giao hàng</span>
+                <strong>Liên hệ</strong>
               </div>
-
-              {/* Tổng cộng */}
-              <div className="summary-row total-row">
-                <span className="summary-label">Tổng cộng:</span>
-                <span className="summary-value">
-                  {finalTotal.toLocaleString()}đ
-                </span>
+              <div className="cart-summary-total">
+                <span>Tổng thanh toán</span>
+                <strong>{formatCurrency(subtotal)}</strong>
               </div>
-
-              {/* Nút thanh toán */}
-              <button className="checkout-btn">
-                <FontAwesomeIcon icon={["fas", "credit-card"]} /> Tiến hành thanh toán
+              <button type="button" className="cart-checkout-btn" onClick={checkout}>
+                <FontAwesomeIcon icon={["fas", "shopping-bag"]} />
+                Đặt hàng ngay
               </button>
-
-              {/* Nút tiếp tục mua sắm (mobile) */}
-              <Link
-                to="/products"
-                className="continue-btn-mobile d-md-none"
-                replace
-              >
-                <FontAwesomeIcon icon={["fas", "arrow-left"]} /> Tiếp tục mua sắm
-              </Link>
-
-              {/* Thông tin bổ sung */}
-              <div className="info-box mt-4">
-                <div className="info-item">
-                  <FontAwesomeIcon icon={["fas", "check"]} className="info-icon" />
-                  <span>Miễn phí vận chuyển cho đơn từ 500.000đ</span>
-                </div>
-                <div className="info-item">
-                  <FontAwesomeIcon icon={["fas", "check"]} className="info-icon" />
-                  <span>Hoàn tiền 100% nếu không hài lòng</span>
-                </div>
-                <div className="info-item">
-                  <FontAwesomeIcon icon={["fas", "check"]} className="info-icon" />
-                  <span>Giao hàng trong 2-3 ngày</span>
-                </div>
-              </div>
-            </div>
+            </aside>
           </div>
-
-          {/* Thông tin bổ sung */}
-          <div className="card mt-3">
-            <div className="card-body">
-              <h6 className="card-title text-dark mb-3">
-                <FontAwesomeIcon icon={["fas", "info-circle"]} /> Thông tin
-              </h6>
-              <small className="text-muted d-block mb-2">
-                <FontAwesomeIcon icon={["fas", "check"]} className="text-success" /> Miễn
-                phí vận chuyển cho đơn từ 500.000đ
-              </small>
-              <small className="text-muted d-block mb-2">
-                <FontAwesomeIcon icon={["fas", "check"]} className="text-success" /> Hoàn
-                tiền 100% nếu không hài lòng
-              </small>
-              <small className="text-muted d-block">
-                <FontAwesomeIcon icon={["fas", "check"]} className="text-success" /> Giao
-                hàng trong 2-3 ngày
-              </small>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

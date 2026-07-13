@@ -595,6 +595,306 @@ main {
   box-shadow: 0 10px 24px rgba(32, 201, 151, 0.22);
 }
 
+/* Flash sale / khung gio vang */
+.flash-sale {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(16px, 3vw, 26px);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(237, 250, 252, 0.96)),
+    linear-gradient(90deg, rgba(255, 193, 7, 0.1), transparent 45%);
+  box-shadow: 0 20px 52px rgba(15, 23, 42, 0.12);
+}
+
+.flash-sale::after {
+  content: "";
+  position: absolute;
+  inset: auto 22px 0;
+  height: 4px;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(90deg, #ffc107, #00bcd4, #20c997);
+}
+
+.flash-sale-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.flash-sale-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.flash-sale-icon {
+  display: grid;
+  flex: 0 0 44px;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #ffc107, #ff7a45);
+  box-shadow: 0 10px 22px rgba(255, 122, 69, 0.32);
+  color: #fff;
+  font-size: 1.1rem;
+  animation: flashIconPulse 1.6s ease-in-out infinite;
+}
+
+.flash-sale-title strong {
+  display: block;
+  color: #101828;
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.flash-sale-title p {
+  margin: 2px 0 0;
+  color: #667085;
+  font-size: 0.86rem;
+}
+
+.flash-sale-countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.flash-sale-countdown > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #00838f;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.flash-sale-clock {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #101828;
+  font-weight: 900;
+  font-size: 1.15rem;
+}
+
+.flash-sale-clock b {
+  color: rgba(16, 24, 40, 0.35);
+}
+
+.flash-sale-clock-box {
+  display: grid;
+  place-items: center;
+  min-width: 38px;
+  padding: 6px 4px;
+  border-radius: 8px;
+  background: #101828;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 8px 18px rgba(16, 24, 40, 0.28);
+  animation: flashClockTick 1s steps(1) infinite;
+}
+
+.flash-sale-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.flash-sale-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 10px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  animation: homeSectionRise 0.55s cubic-bezier(0.2, 0.78, 0.28, 1) both;
+  animation-delay: calc(var(--item-index, 0) * 90ms);
+  will-change: transform;
+}
+
+.flash-sale-card:hover {
+  color: inherit;
+  border-color: rgba(255, 122, 69, 0.35);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.14);
+  transform: translateY(-6px);
+}
+
+.flash-sale-media {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.flash-sale-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.32s ease;
+}
+
+.flash-sale-card:hover .flash-sale-media img {
+  transform: scale(1.06);
+}
+
+.flash-sale-discount {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #ff4d4f;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  box-shadow: 0 10px 20px rgba(255, 77, 79, 0.32);
+}
+
+.flash-sale-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 12px 14px 14px;
+}
+
+.flash-sale-body h5 {
+  min-height: 40px;
+  margin: 0 0 8px;
+  color: #101828;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.flash-sale-price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.flash-sale-price strong {
+  color: #ff4d4f;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.flash-sale-price span {
+  color: #98a2b3;
+  font-size: 0.78rem;
+  text-decoration: line-through;
+}
+
+.flash-sale-progress {
+  margin-top: auto;
+  margin-bottom: 10px;
+}
+
+.flash-sale-progress-bar {
+  overflow: hidden;
+  height: 6px;
+  border-radius: 999px;
+  background: #f2f4f7;
+}
+
+.flash-sale-progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffc107, #ff7a45);
+  transition: width 0.4s ease;
+}
+
+.flash-sale-progress small {
+  display: block;
+  margin-top: 4px;
+  color: #667085;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.flash-sale-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border-radius: 8px;
+  background: #101828;
+  color: #fff;
+  font-size: 0.86rem;
+  font-weight: 800;
+  transition: background-color 0.22s ease, transform 0.22s ease;
+}
+
+.flash-sale-card:hover .flash-sale-cta {
+  background: #ff4d4f;
+  transform: translateY(-2px);
+}
+
+@keyframes flashIconPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes flashClockTick {
+  0% {
+    transform: translateY(0);
+  }
+
+  40% {
+    transform: translateY(-1px);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .flash-sale-head {
+    align-items: flex-start;
+  }
+
+  .flash-sale-countdown {
+    align-items: flex-start;
+  }
+
+  .flash-sale-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .flash-sale-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .home-intro {
   position: relative;
   overflow: hidden;
@@ -2526,7 +2826,10 @@ main {
   .home-banner-title,
   .home-banner-text,
   .home-hero-actions,
-  .home-hero-metrics {
+  .home-hero-metrics,
+  .flash-sale-icon,
+  .flash-sale-clock-box,
+  .flash-sale-card {
     animation: none !important;
     transition: none !important;
   }
@@ -2535,7 +2838,8 @@ main {
   .home-banner-title,
   .home-banner-text,
   .home-hero-actions,
-  .home-hero-metrics {
+  .home-hero-metrics,
+  .flash-sale-card {
     opacity: 1;
     transform: none;
   }
