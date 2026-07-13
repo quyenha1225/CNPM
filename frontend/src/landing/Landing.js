@@ -6,7 +6,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "react-router-dom";
 import FlashSale from "./FlashSale";
 
-
 function Landing() {
   const featuredPerPage = 6;
   const [featuredPage, setFeaturedPage] = useState(1);
