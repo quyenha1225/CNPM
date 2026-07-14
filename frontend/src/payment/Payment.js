@@ -1,14 +1,14 @@
 ﻿import React, { useState, useRef, useEffect } from 'react';
-import { useCart } from '../../context/CartContext';
-import { useAuth } from '../../context/AuthContext';
-import { useHistory } from 'react-router-dom';
-import ScrollToTopOnMount from '../../template/ScrollToTopOnMount';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import ScrollToTopOnMount from '../template/ScrollToTopOnMount';
 import QRCode from 'qrcode';
 
 function Payment() {
   const { cartItems, getTotalPrice, clearCart } = useCart();
   const { user, token, isAuthenticated } = useAuth();
-  const history = useHistory();
+  const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState('qr');
   const [orderData, setOrderData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -17,9 +17,9 @@ function Payment() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      history.push('/login');
+      navigate('/login');
     }
-  }, [isAuthenticated, history]);
+  }, [isAuthenticated, navigate]);
 
   const generateQRPayment = async () => {
     setLoading(true);
@@ -109,7 +109,7 @@ function Payment() {
 
       clearCart();
       alert('Thanh toán thành công!');
-      history.push('/');
+      navigate('/');
     } catch (err) {
       setError(err.message);
     } finally {

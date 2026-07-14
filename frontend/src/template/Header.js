@@ -87,7 +87,7 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
           </div>
 
           <div className="eshop-actions">
-            <Link to="/about" className="eshop-action-item">
+            <Link to="/contact" className="eshop-action-item">
               <FontAwesomeIcon icon={["fas", "phone-alt"]} />
               <span>Liên hệ</span>
             </Link>
@@ -211,6 +211,13 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
           </Link>
           <Link to="/about" onClick={closeMenus}>
             Giới thiệu
+          </Link>
+          <Link
+            to="/contact"
+            className="eshop-nav-mobile-link"
+            onClick={closeMenus}
+          >
+            Liên hệ
           </Link>
           <Link
             to="/cart"
