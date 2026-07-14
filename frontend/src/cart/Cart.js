@@ -3,9 +3,9 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import ScrollToTopOnMount from "../template/ScrollToTopOnMount";
-import { mockProductsFromMySQL } from "../products/ProductList";
-import { getProductImage } from "../products/productImages";
-import { getCartItems, saveCartItems } from "./cartStorage";
+import { useCart } from "../context/CartContext";
+import fallbackImage from "../nillkin-case-1.jpg";
+import "./cart.css";
 
 const priceFormatter = new Intl.NumberFormat("vi-VN");
 
@@ -13,63 +13,40 @@ function formatCurrency(value) {
   return `${priceFormatter.format(Math.round(value))} đ`;
 }
 
-function getSalePrice(product) {
-  return product.percent_off > 0
-    ? product.price - (product.percent_off * product.price) / 100
-    : product.price;
-}
-
 function Cart() {
-  const [cartItems, setCartItems] = useState(() => getCartItems());
+  const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
   const [orderStatus, setOrderStatus] = useState("");
-
-  const productMap = useMemo(() => {
-    return new Map(mockProductsFromMySQL.map((product) => [product.id, product]));
-  }, []);
 
   const cartRows = useMemo(() => {
     return cartItems
       .map((item) => {
-        const product = productMap.get(item.id);
-        if (!product) return null;
-
-        const salePrice = getSalePrice(product);
+        const salePrice = Number(item.price) || 0;
+        const originalPrice = Number(item.originalPrice) || salePrice;
+        const product = {
+          id: item.id,
+          name: item.name || "Sản phẩm",
+          brand: item.brand || "",
+          category: item.category || "",
+          image: item.image || item.image_url || fallbackImage,
+        };
 
         return {
           ...item,
           product,
           salePrice,
           lineTotal: salePrice * item.quantity,
-          originalTotal: product.price * item.quantity,
+          originalTotal: originalPrice * item.quantity,
         };
       })
       .filter(Boolean);
-  }, [cartItems, productMap]);
+  }, [cartItems]);
 
   const subtotal = cartRows.reduce((total, item) => total + item.lineTotal, 0);
   const originalTotal = cartRows.reduce((total, item) => total + item.originalTotal, 0);
   const savedTotal = Math.max(0, originalTotal - subtotal);
 
-  function syncCart(nextItems) {
-    setCartItems(nextItems);
-    saveCartItems(nextItems);
-  }
-
-  function updateQuantity(productId, quantity) {
-    const safeQuantity = Math.max(1, quantity);
-    syncCart(
-      cartItems.map((item) =>
-        item.id === productId ? { ...item, quantity: safeQuantity } : item
-      )
-    );
-  }
-
-  function removeItem(productId) {
-    syncCart(cartItems.filter((item) => item.id !== productId));
-  }
-
   function checkout() {
-    syncCart([]);
+    clearCart();
     setOrderStatus("Đã tiếp nhận đơn hàng. Gearxin sẽ liên hệ xác nhận trong ít phút.");
   }
 
@@ -113,7 +90,7 @@ function Cart() {
               {cartRows.map(({ product, quantity, salePrice, lineTotal }) => (
                 <article className="cart-item" key={product.id}>
                   <Link to={`/products/${product.id}`} className="cart-item-media">
-                    <img src={getProductImage(product)} alt={product.name} />
+                    <img src={product.image} alt={product.name} />
                   </Link>
 
                   <div className="cart-item-info">
@@ -145,7 +122,7 @@ function Cart() {
 
                   <div className="cart-item-total">
                     <strong>{formatCurrency(lineTotal)}</strong>
-                    <button type="button" onClick={() => removeItem(product.id)}>
+                    <button type="button" onClick={() => removeFromCart(product.id)}>
                       <FontAwesomeIcon icon={["fas", "trash-alt"]} />
                       Xóa
                     </button>

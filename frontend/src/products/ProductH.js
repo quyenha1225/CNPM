@@ -31,6 +31,7 @@ function ProductH(props) {
       id: props.id || 1,
       name: "Nillkin iPhone X cover",
       price: price,
+      originalPrice: price,
       quantity: 1,
     });
     alert("Sản phẩm đã được thêm vào giỏ hàng!");

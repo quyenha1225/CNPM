@@ -21,6 +21,9 @@ function Product({ data }) {
       id,
       name,
       price: finalPrice,
+      originalPrice: price,
+      brand: data.brand,
+      category: data.category,
       image,
       quantity: 1,
     });

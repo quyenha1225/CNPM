@@ -4,6 +4,12 @@ import Template from "./template/Template";
 import ProductDetail from "./products/detail/ProductDetail";
 import Landing from "./landing/Landing";
 import ProductList from "./products/ProductList";
+import About from "./about/About";
+import Login from "./auth/Login";
+import Register from "./auth/Register";
+import ForgotPassword from "./auth/ForgotPassword";
+import Cart from "./cart/Cart";
+import Payment from "./payment/Payment";
 
 // Map chuẩn khớp 100% với category_slug trong Database MySQL
 const categorySlugMap = {
@@ -71,14 +77,16 @@ function App() {
         <Route path="/products/:id" element={<ProductDetail />} />
 
         {/* Trang Giới thiệu */}
-        <Route
-          path="/about"
-          element={
-            <div className="container mt-5 text-center">
-              <h2>Trang About đang được xây dựng...</h2>
-            </div>
-          }
-        />
+        <Route path="/about" element={<About />} />
+
+        {/* Tài khoản */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+
+        {/* Giỏ hàng / thanh toán */}
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/payment" element={<Payment />} />
 
         {/* Bắt lỗi trang 404 */}
         <Route

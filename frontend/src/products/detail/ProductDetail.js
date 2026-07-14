@@ -95,6 +95,9 @@ function ProductDetail() {
       id: product.id,
       name: product.name,
       price: finalPrice,
+      originalPrice: product.price,
+      brand: product.brand,
+      category: product.category,
       image: productImage,
       quantity: 1,
     });

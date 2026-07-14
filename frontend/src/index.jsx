@@ -5,6 +5,8 @@ import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import { AuthProvider } from "./context/AuthContext";
+import { CartProvider } from "./context/CartContext";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { fas } from "@fortawesome/free-solid-svg-icons";
 import { far } from "@fortawesome/free-regular-svg-icons";
@@ -19,7 +21,11 @@ const root = createRoot(container);
 root.render(
   <React.StrictMode>
     <Router>
-      <App />
+      <AuthProvider>
+        <CartProvider>
+          <App />
+        </CartProvider>
+      </AuthProvider>
     </Router>
   </React.StrictMode>
 );
