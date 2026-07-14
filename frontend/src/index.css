@@ -2498,7 +2498,608 @@ main {
   opacity: 0.45;
 }
 
+.contact-page,
+.about-page {
+  min-height: 72vh;
+  color: #101828;
+  background:
+    linear-gradient(135deg, #f8fafc, #eef8fb 46%, #fff8e1),
+    linear-gradient(90deg, rgba(255, 193, 7, 0.08), transparent 38%, rgba(0, 188, 212, 0.1));
+}
+
+.contact-hero,
+.about-hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(3rem, 7vw, 6rem) 0 clamp(2.4rem, 5vw, 4.8rem);
+  background:
+    linear-gradient(135deg, rgba(16, 24, 40, 0.98), rgba(0, 131, 143, 0.88)),
+    linear-gradient(90deg, rgba(255, 193, 7, 0.18), transparent);
+  color: #fff;
+  isolation: isolate;
+}
+
+.contact-hero::before,
+.about-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 58px 58px;
+  opacity: 0.5;
+  animation: contactGridMove 18s linear infinite;
+  pointer-events: none;
+}
+
+.contact-hero::after,
+.about-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transform: translateX(-100%);
+  animation: contactSweep 5.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.contact-hero-inner,
+.about-hero-inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap: clamp(1.4rem, 4vw, 3.4rem);
+  align-items: center;
+}
+
+.contact-kicker,
+.about-kicker,
+.contact-section-heading span,
+.about-section-heading span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 193, 7, 0.14);
+  color: #ffd95a;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.contact-kicker::before,
+.about-kicker::before,
+.contact-section-heading span::before,
+.about-section-heading span::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #20c997;
+  box-shadow: 0 0 18px rgba(32, 201, 151, 0.85);
+}
+
+.contact-hero h1,
+.about-hero h1 {
+  max-width: 780px;
+  margin: 0;
+  font-size: clamp(2.2rem, 5vw, 4.8rem);
+  font-weight: 950;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+.contact-hero p,
+.about-hero p {
+  max-width: 680px;
+  margin: 18px 0 0;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: clamp(1rem, 1.45vw, 1.16rem);
+  line-height: 1.75;
+}
+
+.contact-hero-actions,
+.about-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.contact-primary-btn,
+.contact-secondary-btn,
+.about-primary-btn,
+.about-secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 50px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-weight: 900;
+  text-decoration: none;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease;
+}
+
+.contact-primary-btn,
+.about-primary-btn,
+.contact-form-panel button {
+  border: 0;
+  background: linear-gradient(135deg, #ffc107, #20c997);
+  color: #101828;
+}
+
+.contact-secondary-btn,
+.about-secondary-btn {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.contact-primary-btn:hover,
+.contact-secondary-btn:hover,
+.about-primary-btn:hover,
+.about-secondary-btn:hover,
+.contact-form-panel button:hover {
+  color: #fff;
+  transform: translateY(-3px);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.24);
+}
+
+.contact-primary-btn:hover,
+.about-primary-btn:hover,
+.contact-form-panel button:hover {
+  background: linear-gradient(135deg, #00838f, #20c997);
+}
+
+.contact-hero-panel,
+.about-story-panel {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(16px);
+  animation: contactFloatIn 0.72s cubic-bezier(0.2, 0.78, 0.28, 1) both;
+}
+
+.contact-hero-panel strong,
+.about-story-panel strong {
+  display: block;
+  margin-top: 12px;
+  color: #fff;
+  font-size: clamp(1.45rem, 3vw, 2.2rem);
+  font-weight: 950;
+  line-height: 1.15;
+}
+
+.about-story-panel > span {
+  color: #ffd95a;
+  font-weight: 900;
+}
+
+.contact-live-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #b8f7df;
+  font-weight: 900;
+}
+
+.contact-live-dot span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #20c997;
+  box-shadow: 0 0 0 rgba(32, 201, 151, 0.7);
+  animation: contactPulse 1.6s ease-out infinite;
+}
+
+.contact-mini-stats,
+.about-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.contact-mini-stats span,
+.about-stat-grid div {
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.contact-mini-stats b,
+.about-stat-grid strong {
+  display: block;
+  color: #fff;
+  font-size: 1.28rem;
+  font-weight: 950;
+}
+
+.contact-section,
+.about-section {
+  padding: clamp(2.4rem, 5vw, 4.5rem) 0;
+}
+
+.contact-section-heading,
+.about-section-heading {
+  max-width: 720px;
+  margin-bottom: 24px;
+}
+
+.contact-section-heading span,
+.about-section-heading span {
+  background: rgba(0, 188, 212, 0.08);
+  color: #00838f;
+}
+
+.contact-section-heading h2,
+.about-section-heading h2,
+.contact-service-panel h2,
+.contact-form-panel h2 {
+  margin: 0;
+  color: #101828;
+  font-size: clamp(1.8rem, 3.4vw, 3rem);
+  font-weight: 950;
+  line-height: 1.1;
+}
+
+.contact-section-heading p,
+.contact-service-panel p {
+  margin: 12px 0 0;
+  color: #667085;
+  line-height: 1.7;
+}
+
+.contact-channel-grid,
+.contact-branch-grid,
+.about-commit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.contact-channel-card,
+.contact-branch-card,
+.about-commit-card,
+.contact-service-panel,
+.contact-form-panel,
+.about-stat-grid div,
+.about-process-steps div {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 22px 52px rgba(15, 23, 42, 0.08);
+}
+
+.contact-channel-card,
+.about-commit-card {
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+  color: inherit;
+  text-decoration: none;
+  animation: contactCardIn 0.58s cubic-bezier(0.2, 0.78, 0.28, 1) both;
+  animation-delay: calc(var(--contact-index, var(--about-index, 0)) * 80ms);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.contact-channel-card::after,
+.contact-branch-card::after,
+.about-commit-card::after {
+  content: "";
+  position: absolute;
+  inset: auto 16px 0;
+  height: 3px;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(90deg, #ffc107, #00bcd4, #20c997);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.28s ease;
+}
+
+.contact-channel-card:hover,
+.contact-branch-card:hover,
+.about-commit-card:hover {
+  border-color: rgba(0, 188, 212, 0.28);
+  color: inherit;
+  transform: translateY(-6px);
+  box-shadow: 0 28px 58px rgba(15, 23, 42, 0.14);
+}
+
+.contact-channel-card:hover::after,
+.contact-branch-card:hover::after,
+.about-commit-card:hover::after {
+  transform: scaleX(1);
+}
+
+.contact-channel-card span,
+.about-commit-card div {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 14px;
+  place-items: center;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ffc107, #20c997);
+  color: #101828;
+  font-size: 1.08rem;
+}
+
+.contact-channel-card small {
+  display: block;
+  color: #667085;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.contact-channel-card strong {
+  display: block;
+  margin-top: 6px;
+  color: #101828;
+  font-size: 1.02rem;
+}
+
+.contact-branches-band,
+.about-commit-band {
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.contact-branch-card {
+  position: relative;
+  overflow: hidden;
+  padding: 22px;
+  animation: contactCardIn 0.58s cubic-bezier(0.2, 0.78, 0.28, 1) both;
+  animation-delay: calc(var(--branch-index, 0) * 90ms);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.contact-branch-number {
+  width: fit-content;
+  margin-bottom: 12px;
+  color: #00838f;
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+
+.contact-branch-card h3,
+.about-commit-card h3 {
+  margin: 0 0 12px;
+  color: #101828;
+  font-size: 1.14rem;
+  font-weight: 950;
+}
+
+.contact-branch-card p {
+  display: flex;
+  gap: 10px;
+  margin: 9px 0;
+  color: #475467;
+  line-height: 1.55;
+}
+
+.contact-branch-card p svg {
+  flex: 0 0 auto;
+  margin-top: 4px;
+  color: #00838f;
+}
+
+.contact-branch-card small,
+.about-commit-card p,
+.about-process-steps span {
+  display: block;
+  color: #667085;
+  line-height: 1.65;
+}
+
+.contact-branch-card a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  color: #00838f;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.contact-branch-card a:hover {
+  color: #005f67;
+}
+
+.contact-info-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(320px, 1.05fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.contact-service-panel,
+.contact-form-panel {
+  padding: clamp(1.2rem, 3vw, 2rem);
+}
+
+.contact-service-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.contact-service-list div {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: #475467;
+  font-weight: 800;
+}
+
+.contact-service-list svg {
+  margin-top: 3px;
+  color: #20c997;
+}
+
+.contact-form-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.contact-form-panel label {
+  display: grid;
+  gap: 7px;
+  color: #344054;
+  font-weight: 900;
+}
+
+.contact-form-panel input,
+.contact-form-panel textarea {
+  width: 100%;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 8px;
+  background: #fff;
+  color: #101828;
+  font: inherit;
+}
+
+.contact-form-panel input {
+  min-height: 48px;
+  padding: 0 14px;
+}
+
+.contact-form-panel textarea {
+  padding: 12px 14px;
+  resize: vertical;
+}
+
+.contact-form-panel input:focus,
+.contact-form-panel textarea:focus {
+  border-color: #00a6b2;
+  box-shadow: 0 0 0 4px rgba(0, 188, 212, 0.12);
+  outline: 0;
+}
+
+.contact-form-panel button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 50px;
+  border-radius: 8px;
+  font-weight: 950;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease, color 0.22s ease;
+}
+
+.about-stat-grid {
+  margin: 0;
+}
+
+.about-stat-grid div {
+  padding: 24px;
+  text-align: center;
+  animation: contactCardIn 0.58s cubic-bezier(0.2, 0.78, 0.28, 1) both;
+}
+
+.about-stat-grid strong {
+  color: #00838f;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+}
+
+.about-stat-grid span {
+  color: #667085;
+  font-weight: 800;
+}
+
+.about-process-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.about-process-steps div {
+  padding: 22px;
+}
+
+.about-process-steps b {
+  display: inline-flex;
+  margin-bottom: 12px;
+  color: #ffc107;
+  font-size: 0.9rem;
+}
+
+.about-process-steps strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #101828;
+  font-size: 1.08rem;
+  font-weight: 950;
+}
+
 @keyframes homeHeroReveal {
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes contactGridMove {
+  from {
+    background-position: 0 0, 0 0;
+  }
+
+  to {
+    background-position: 58px 58px, 58px 58px;
+  }
+}
+
+@keyframes contactSweep {
+  0%,
+  45% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes contactPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(32, 201, 151, 0.7);
+  }
+
+  100% {
+    box-shadow: 0 0 0 14px rgba(32, 201, 151, 0);
+  }
+}
+
+@keyframes contactFloatIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes contactCardIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0);
@@ -2682,6 +3283,18 @@ main {
     grid-column: 2;
     justify-self: start;
   }
+
+  .contact-hero-inner,
+  .about-hero-inner,
+  .contact-info-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-mini-stats,
+  .about-stat-grid,
+  .about-process-steps {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 767.98px) {
@@ -2809,37 +3422,239 @@ main {
     align-items: stretch;
     flex-direction: column;
   }
+
+  .contact-hero-actions,
+  .about-actions {
+    flex-direction: column;
+  }
+
+  .contact-primary-btn,
+  .contact-secondary-btn,
+  .about-primary-btn,
+  .about-secondary-btn {
+    width: 100%;
+  }
+
+  .contact-channel-grid,
+  .contact-branch-grid,
+  .about-commit-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
+/* ==========================================================================
+   1) SỬA LỖI LỆCH - thêm/ghi đè các rule sau vào file CSS hiện có
+   ========================================================================== */
+
+/* Bug: .about-stat-grid div (500+ / 3 / 24/7) không được canh giữa như
+   .home-stat ở trang chủ -> số và nhãn bị lệch trái, nhìn "lệch" so với
+   phần còn lại của trang. */
+.about-stat-grid div {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+/* Bug: đoạn <p> mô tả bên trong khối story/visual panel không có màu chữ
+   riêng -> dễ bị chìm/khó đọc trên nền tối. */
+.about-visual-caption p,
+.about-story-panel p {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+/* Đảm bảo 3 card cam kết cao bằng nhau và icon/tiêu đề/mô tả luôn thẳng
+   hàng theo chiều dọc, bất kể độ dài text khác nhau. */
+.about-commit-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.about-commit-card p {
+  margin-top: auto;
+}
+
+/* Đảm bảo 3 bước quy trình cao bằng nhau. */
+.about-process-steps div {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ==========================================================================
+2) VISUAL MỚI - khối ảnh công nghệ lướt từ trên xuống + xoay hình vuông
+      Thay thế hoàn toàn khối .about-story-panel cũ (nếu còn tồn tại trong
+      file CSS gốc, có thể giữ lại rule đó, các class mới không đụng tới nó).
+   ========================================================================== */
+
+.about-visual-panel {
+  position: relative;
+  overflow: hidden;
+  min-height: 420px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+}
+
+.about-marquee {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 20px;
+  mask-image: linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent);
+}
+
+.about-marquee-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  will-change: transform;
+  animation-name: aboutMarqueeDown;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.about-marquee-col-a {
+  animation-duration: 17s;
+}
+
+.about-marquee-col-b {
+  animation-duration: 23s;
+  margin-top: -64px;
+}
+
+.about-marquee-tile {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  aspect-ratio: 1;
+  width: 100%;
+  max-width: 108px;
+  margin: 0 auto;
+  place-items: center;
+  border-radius: 14px;
+  color: #101828;
+  font-size: 1.5rem;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.22);
+  animation: aboutTileSpin 10s linear infinite;
+  will-change: transform;
+}
+
+.about-marquee-tile:nth-child(5n + 1) {
+  background: linear-gradient(135deg, #ffc107, #ff7a45);
+}
+
+.about-marquee-tile:nth-child(5n + 2) {
+  background: linear-gradient(135deg, #00bcd4, #00838f);
+  color: #fff;
+}
+
+.about-marquee-tile:nth-child(5n + 3) {
+  background: linear-gradient(135deg, #20c997, #198754);
+  color: #fff;
+}
+
+.about-marquee-tile:nth-child(5n + 4) {
+  background: linear-gradient(135deg, #ffd95a, #ffc107);
+}
+
+.about-marquee-tile:nth-child(5n + 5) {
+  background: linear-gradient(135deg, #0d6efd, #00bcd4);
+  color: #fff;
+}
+
+.about-marquee-tile:nth-child(even) {
+  animation-direction: reverse;
+  animation-duration: 13s;
+}
+
+.about-visual-caption {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  z-index: 2;
+  padding: clamp(1rem, 3vw, 1.6rem);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(16, 24, 40, 0.72);
+  backdrop-filter: blur(16px);
+  animation: contactFloatIn 0.72s cubic-bezier(0.2, 0.78, 0.28, 1) both;
+}
+
+.about-visual-caption > span {
+  color: #ffd95a;
+  font-weight: 900;
+}
+
+.about-visual-caption strong {
+  display: block;
+  margin-top: 8px;
+  color: #fff;
+  font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+  font-weight: 950;
+  line-height: 1.25;
+}
+
+@keyframes aboutMarqueeDown {
+  from {
+    transform: translate3d(0, -50%, 0);
+  }
+
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes aboutTileSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .about-visual-panel {
+    min-height: 320px;
+  }
+
+  .about-marquee-tile {
+    max-width: 84px;
+    font-size: 1.2rem;
+  }
+}
+
+/* ==========================================================================
+3) Tôn trọng prefers-reduced-motion
+      Thêm ".about-marquee-col, .about-marquee-tile, .about-visual-caption"
+      vào danh sách selector trong khối @media (prefers-reduced-motion: reduce)
+      đã có sẵn trong file CSS gốc, ví dụ:
+   ========================================================================== */
+
 @media (prefers-reduced-motion: reduce) {
-  .home-hero-carousel .carousel-item,
-  .home-banner-image,
-  .home-tech-grid,
-  .home-tech-grid::after,
-  .home-tech-orbit,
-  .home-reveal-section,
-  .home-showcase-track,
-  .home-feature-media img,
-  .product-grid-item,
-  .product-detail-media img,
-  .home-banner-kicker,
-  .home-banner-title,
-  .home-banner-text,
-  .home-hero-actions,
-  .home-hero-metrics,
-  .flash-sale-icon,
-  .flash-sale-clock-box,
-  .flash-sale-card {
+  .about-marquee-col,
+  .about-marquee-tile,
+  .about-visual-caption {
     animation: none !important;
     transition: none !important;
   }
 
-  .home-banner-kicker,
-  .home-banner-title,
-  .home-banner-text,
-  .home-hero-actions,
-  .home-hero-metrics,
-  .flash-sale-card {
+  .about-marquee-col {
+    transform: none !important;
+  }
+
+  .about-visual-caption {
     opacity: 1;
     transform: none;
   }

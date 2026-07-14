@@ -5,6 +5,7 @@ import ProductDetail from "./products/detail/ProductDetail";
 import Landing from "./landing/Landing";
 import ProductList from "./products/ProductList";
 import About from "./about/About";
+import Contact from "./contact/Contact";
 import Login from "./auth/Login";
 import Register from "./auth/Register";
 import ForgotPassword from "./auth/ForgotPassword";
@@ -78,6 +79,7 @@ function App() {
 
         {/* Trang Giới thiệu */}
         <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
 
         {/* Tài khoản */}
         <Route path="/login" element={<Login />} />
