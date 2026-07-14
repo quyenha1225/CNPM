@@ -1,50 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import Image from "../nillkin-case.webp";
-import ImageAlt from "../nillkin-case-1.jpg";
-import ImageDark from "../nillkin-case.jpg";
 
-const flashItems = [
-  {
-    name: "PC Gaming Shark RTX 4060",
-    price: 18500000,
-    oldPrice: 21900000,
-    sold: 82,
-    stock: 100,
-    image: ImageDark,
-    to: "/products/1",
-  },
-  {
-    name: "Laptop Asus Vivobook 14",
-    price: 14290000,
-    oldPrice: 16990000,
-    sold: 64,
-    stock: 100,
-    image: ImageAlt,
-    to: "/products/21",
-  },
-  {
-    name: "Màn hình MSI Gaming 24 inch",
-    price: 3290000,
-    oldPrice: 3990000,
-    sold: 91,
-    stock: 100,
-    image: Image,
-    to: "/products/71",
-  },
-  {
-    name: "CPU Intel Core i5-14600K",
-    price: 8490000,
-    oldPrice: 9990000,
-    sold: 47,
-    stock: 100,
-    image: ImageDark,
-    to: "/products/41",
-  },
-];
-
+// Thay thế hàm formatVND cũ bằng hàm này
 function formatVND(value) {
+  if (typeof value !== "number") {
+    value = Number(value) || 0;
+  }
   return value.toLocaleString("vi-VN") + " đ";
 }
 
@@ -92,6 +54,50 @@ function useCountdown() {
 
 function FlashSale() {
   const { hours, minutes, seconds } = useCountdown();
+  const [flashItems, setFlashItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Lấy dữ liệu sản phẩm thật từ Database cho Flash Sale
+  useEffect(() => {
+    fetch("http://localhost:3001/api/products")
+      .then((res) => res.json())
+      .then((data) => {
+        // Lấy ra 4 sản phẩm đầu tiên làm dữ liệu mẫu giờ vàng
+        const selectedProducts = data.slice(0, 4).map((item, index) => {
+          // Tạo giả lập giá cũ (bằng giá gốc + 15% làm ưu đãi giờ vàng)
+          const oldPrice = Math.round((item.price * 1.15) / 10000) * 10000;
+
+          // Giả lập số lượng đã bán ngẫu nhiên theo ID để không bị thay đổi mỗi lần F5
+          const soldValue = ((item.id * 7) % 45) + 30;
+
+          return {
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            oldPrice: oldPrice,
+            sold: soldValue,
+            stock: 100,
+            image: item.image || item.image_url, // Lấy đúng trường ảnh từ DB
+            to: `/products/${item.id}`,
+          };
+        });
+        setFlashItems(selectedProducts);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Lỗi lấy sản phẩm Flash Sale:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flash-sale text-center py-4">
+        <div className="spinner-border text-warning" role="status"></div>
+        <p className="mt-2 text-muted">Đang tải khung giờ vàng...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flash-sale">
@@ -106,7 +112,10 @@ function FlashSale() {
           </div>
         </div>
 
-        <div className="flash-sale-countdown" aria-label="Thời gian kết thúc ưu đãi">
+        <div
+          className="flash-sale-countdown"
+          aria-label="Thời gian kết thúc ưu đãi"
+        >
           <span>
             <FontAwesomeIcon icon={["fas", "clock"]} /> Kết thúc trong
           </span>
@@ -123,17 +132,17 @@ function FlashSale() {
       <div className="flash-sale-grid">
         {flashItems.map((item, index) => {
           const percentOff = Math.round(
-            ((item.oldPrice - item.price) / item.oldPrice) * 100
+            ((item.oldPrice - item.price) / item.oldPrice) * 100,
           );
           const soldPercent = Math.min(
             Math.round((item.sold / item.stock) * 100),
-            100
+            100,
           );
 
           return (
             <Link
               to={item.to}
-              key={item.to}
+              key={item.id}
               className="flash-sale-card"
               style={{ "--item-index": index }}
             >

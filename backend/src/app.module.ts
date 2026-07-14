@@ -17,17 +17,16 @@ import { AiController } from './ai/ai.controller';
     }),
     // 2. Cấu hình kết nối cơ sở dữ liệu MySQL bằng TypeORM
     TypeOrmModule.forRoot({
-  type: 'mysql',
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT || '', 10) || 3306,
+      type: 'mysql',
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT || '3306', 10), // Đã sửa lỗi TypeScript tại đây bằng cách thêm fallback string
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_DATABASE,
 
-  username: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
-  
-  entities: [__dirname + '/**/*.entity{.ts,.js}'],
-  synchronize: true, 
-}),
+      entities: [__dirname + '/**/*.entity{.ts,.js}'],
+      synchronize: true, // Lưu ý: Tự động đồng bộ cấu trúc bảng từ Entity vào DB (chế độ Dev)
+    }),
 
     UsersModule,
     AuthModule,

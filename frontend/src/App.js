@@ -2,15 +2,16 @@ import { useEffect, useState } from "react";
 import { Routes, Route, useParams } from "react-router-dom";
 import Template from "./template/Template";
 import ProductDetail from "./products/detail/ProductDetail";
-import Landing from "./landing/Landing"; // Trang chủ mặc định ban đầu của bạn
+import Landing from "./landing/Landing";
 import ProductList from "./products/ProductList";
 
+// Map chuẩn khớp 100% với category_slug trong Database MySQL
 const categorySlugMap = {
-  laptop: "Laptop",
-  "dien-thoai": "DienThoai",
-  "phu-kien": "PhuKien",
-  "linh-kien-pc": "LinhKien",
-  "man-hinh": "ManHinh",
+  laptop: "laptop",
+  "dien-thoai": "dien-thoai",
+  "phu-kien": "phu-kien",
+  "linh-kien-pc": "linh-kien-pc",
+  "man-hinh": "man-hinh",
 };
 
 function CategoryProductPage({ category, setCategory, brand, setBrand }) {
@@ -32,28 +33,26 @@ function CategoryProductPage({ category, setCategory, brand, setBrand }) {
 }
 
 function App() {
-  // Quản lý State tập trung để đồng bộ giữa Mega Menu và trang sản phẩm
   const [currentCategory, setCurrentCategory] = useState("");
   const [currentBrand, setCurrentBrand] = useState("");
 
   return (
     <Template setCategory={setCurrentCategory} setBrand={setCurrentBrand}>
       <Routes>
-
         {/* 1. ĐƯA TRANG LANDING CŨ VỀ LÀM TRANG CHỦ MẶC ĐỊNH (/) */}
         <Route path="/" element={<Landing />} />
-        
+
         {/* 2. CHỈ KHI VÀO ĐƯỜNG DẪN /products MỚI RA TRANG SẢN PHẨM CÔNG NGHỆ */}
-        <Route 
-          path="/products" 
+        <Route
+          path="/products"
           element={
-            <ProductList 
-              category={currentCategory} 
+            <ProductList
+              category={currentCategory}
               setCategory={setCurrentCategory}
               brand={currentBrand}
               setBrand={setCurrentBrand}
             />
-          } 
+          }
         />
 
         <Route
@@ -70,7 +69,7 @@ function App() {
 
         {/* Trang chi tiết sản phẩm */}
         <Route path="/products/:id" element={<ProductDetail />} />
-        
+
         {/* Trang Giới thiệu */}
         <Route
           path="/about"
@@ -80,7 +79,7 @@ function App() {
             </div>
           }
         />
-        
+
         {/* Bắt lỗi trang 404 */}
         <Route
           path="*"

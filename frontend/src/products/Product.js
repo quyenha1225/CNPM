@@ -11,12 +11,10 @@ function formatPrice(price) {
 function Product({ data }) {
   const { addToCart } = useCart();
   const { id, name, price, image_url, percent_off } = data;
-  let image = fallbackImage;
-  if (image_url) {
-    image = image_url.startsWith("/") ? process.env.PUBLIC_URL + image_url : image_url;
-  }
-
-  const finalPrice = percent_off ? price - (percent_off * price) / 100 : price;
+  const image = image_url || fallbackImage;
+  const finalPrice = percent_off
+    ? price - (percent_off * price) / 100
+    : price;
 
   const handleAddToCart = () => {
     addToCart({
@@ -41,7 +39,12 @@ function Product({ data }) {
               {percent_off}% OFF
             </div>
           )}
-          <img className="card-img-top bg-dark cover" height="200" alt={name} src={image} />
+          <img
+            className="card-img-top bg-dark cover"
+            height="200"
+            alt={name}
+            src={image}
+          />
         </Link>
 
         <div className="card-body d-flex flex-column justify-content-between">
@@ -57,7 +60,11 @@ function Product({ data }) {
             <span className="fw-bold text-danger">{formatPrice(finalPrice)}</span>
           </p>
           <div className="d-grid d-block">
-            <button type="button" className="btn btn-outline-dark mt-3" onClick={handleAddToCart}>
+            <button
+              type="button"
+              className="btn btn-outline-dark mt-3"
+              onClick={handleAddToCart}
+            >
               <FontAwesomeIcon icon={["fas", "cart-plus"]} /> Thêm vào giỏ
             </button>
           </div>

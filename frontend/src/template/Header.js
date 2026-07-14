@@ -4,12 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useCart } from "../context/CartContext";
 import logo from "../quyen-pc-logo.png";
 
+// Map chuẩn khớp 100% với category_slug trong MySQL và menuCategories ở ProductList
 const categoryMap = {
-  laptop: "Laptop",
-  "dien-thoai": "DienThoai",
-  "phu-kien": "PhuKien",
-  "linh-kien-pc": "LinhKien",
-  "man-hinh": "ManHinh",
+  laptop: "laptop",
+  "dien-thoai": "dien-thoai",
+  "phu-kien": "phu-kien",
+  "linh-kien-pc": "linh-kien-pc",
+  "man-hinh": "man-hinh",
 };
 
 function Header({ setCategory = () => {}, setBrand = () => {} }) {
@@ -60,6 +61,7 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
     closeMenus();
   }
 
+  // Cập nhật trực tiếp slug gốc dạng chữ thường gạch ngang
   function applyCategory(category) {
     setCategory(category);
     setBrand("");
@@ -93,7 +95,6 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
             <Link to="/cart" className="eshop-action-item">
               <FontAwesomeIcon icon={["fas", "shopping-cart"]} />
               <span>Giỏ hàng</span>
-
               <b>{cartCount}</b>
             </Link>
 
@@ -129,8 +130,7 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
           <div
             ref={categoryDropdownRef}
             className={
-              "eshop-category-dropdown " +
-              (isCategoryOpen ? "is-open" : "")
+              "eshop-category-dropdown " + (isCategoryOpen ? "is-open" : "")
             }
           >
             <button

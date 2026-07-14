@@ -135,7 +135,7 @@ FROM roles WHERE role_code = 'CUSTOMER';
 
 INSERT IGNORE INTO user_addresses (
     user_id,
-    receiver_name,  
+    receiver_name,
     receiver_phone,
     province_name,
     district_name,

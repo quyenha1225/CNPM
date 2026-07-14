@@ -3,7 +3,6 @@ import { Link, useParams } from "react-router-dom";
 import ScrollToTopOnMount from "../../template/ScrollToTopOnMount";
 import { useCart } from "../../context/CartContext";
 import { toast } from "../../utils/Toast";
-import { getProductById } from "../../api/products";
 import fallbackImage from "../../nillkin-case-1.jpg";
 
 function formatPrice(price) {
@@ -20,55 +19,66 @@ function getDiscountedPrice(product) {
 function ProductDetail() {
   const { id } = useParams();
   const { addToCart } = useCart();
+
   const [product, setProduct] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [recommendations, setRecommendations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    let isMounted = true;
+    setLoading(true);
 
-    const fetchProduct = async () => {
-      try {
-        setIsLoading(true);
-        const foundProduct = await getProductById(id);
+    // Bước 1: Lấy toàn bộ sản phẩm từ Backend để tìm sản phẩm hiện tại (vì Backend không có API getById)
+    fetch("http://localhost:3001/api/products")
+      .then((res) => {
+        if (!res.ok) throw new Error("Không thể tải thông tin sản phẩm!");
+        return res.json();
+      })
+      .then((allProducts) => {
+        const foundProduct = allProducts.find((item) => String(item.id) === id);
+        if (!foundProduct) {
+          throw new Error("Sản phẩm không tồn tại hệ thống!");
+        }
+        setProduct(foundProduct);
+        setLoading(false);
 
-        if (isMounted) {
-          setProduct(foundProduct || null);
-        }
-      } catch (error) {
-        if (isMounted) {
-          setProduct(null);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
+        // Bước 2: Gọi API ghi nhận log view sản phẩm (mặc định userId tạm thời là 1 nếu chưa đăng nhập)
+        fetch("http://localhost:3001/api/products/log-view", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: 1, productId: Number(id) }),
+        }).catch((err) => console.log("Lỗi ghi log view:", err));
 
-    fetchProduct();
-    return () => {
-      isMounted = false;
-    };
+        // Bước 3: Gọi API lấy danh sách sản phẩm gợi ý
+        fetch(`http://localhost:3001/api/products/recommend/${id}`)
+          .then((res) => res.json())
+          .then((recData) => setRecommendations(recData))
+          .catch((err) => console.log("Lỗi tải gợi ý:", err));
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
   }, [id]);
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <>
-        <ScrollToTopOnMount />
-        <div className="container mt-5 text-center py-5">
-          <div className="spinner-border text-primary" role="status"></div>
-          <p className="mt-3">Đang tải thông tin sản phẩm...</p>
+      <div className="container text-center my-5 py-5">
+        <div className="spinner-border text-dark" role="status">
+          <span className="visually-hidden">Đang tải...</span>
         </div>
-      </>
+        <p className="mt-2">Đang tải chi tiết sản phẩm...</p>
+      </div>
     );
   }
 
-  if (!product) {
+  if (error || !product) {
     return (
       <>
         <ScrollToTopOnMount />
         <div className="container mt-5 text-center">
           <h2 className="text-danger mb-4">Sản phẩm không tồn tại!</h2>
+          <p className="text-muted">{error}</p>
           <Link to="/products" className="btn btn-outline-dark px-4 py-2">
             Quay lại danh sách
           </Link>
@@ -77,12 +87,7 @@ function ProductDetail() {
     );
   }
 
-  let productImage = fallbackImage;
-  if (product.image_url) {
-    productImage = product.image_url.startsWith("/")
-      ? process.env.PUBLIC_URL + product.image_url
-      : product.image_url;
-  }
+  const productImage = product.image_url || fallbackImage;
   const finalPrice = getDiscountedPrice(product);
 
   const handleAddToCart = () => {
@@ -94,10 +99,6 @@ function ProductDetail() {
       quantity: 1,
     });
     toast.success("✓ Sản phẩm đã được thêm vào giỏ hàng!", 3000);
-  };
-
-  const handleBuyNow = () => {
-    handleAddToCart();
   };
 
   return (
@@ -136,7 +137,9 @@ function ProductDetail() {
               <span className="badge bg-success">Còn hàng</span>
             </div>
 
-            <p className="fs-4 text-danger fw-bold mb-3">{formatPrice(finalPrice)}</p>
+            <p className="fs-4 text-danger fw-bold mb-3">
+              {formatPrice(finalPrice)}
+            </p>
 
             {product.percent_off > 0 && (
               <p className="text-muted mb-3">
@@ -145,7 +148,9 @@ function ProductDetail() {
             )}
 
             <p className="text-muted lh-lg mb-4 border-top pt-3">
-              <strong>Đặc điểm nổi bật:</strong> Sản phẩm công nghệ thuộc nhóm {product.category}, phù hợp để nâng cấp góc làm việc, học tập và giải trí hằng ngày.
+              <strong>Đặc điểm nổi bật:</strong> Sản phẩm công nghệ thương hiệu{" "}
+              {product.brand || "Khác"}, thuộc nhóm {product.category}, thiết kế
+              tối ưu, hiệu năng cao và bền bỉ.
             </p>
 
             <div className="d-flex gap-3 mt-auto">
@@ -156,16 +161,45 @@ function ProductDetail() {
               >
                 Thêm vào giỏ hàng
               </button>
-              <button
-                type="button"
-                className="btn btn-outline-danger btn-lg flex-grow-1 py-3 rounded-1"
-                onClick={handleBuyNow}
-              >
-                Mua ngay
-              </button>
             </div>
           </div>
         </div>
+
+        {/* PHẦN HIỂN THỊ SẢN PHẨM GỢI Ý (ĐỔ TỪ DB THẬT) */}
+        {recommendations.length > 0 && (
+          <div className="mt-5">
+            <h3 className="fw-bold mb-4">
+              Sản phẩm tương tự khách hàng cũng xem
+            </h3>
+            <div className="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4">
+              {recommendations.map((item) => (
+                <div className="col" key={item.id}>
+                  <div className="card h-100 border-0 shadow-sm">
+                    <Link to={`/products/${item.id}`}>
+                      <img
+                        src={item.image_url || fallbackImage}
+                        className="card-img-top p-3"
+                        alt={item.name}
+                        style={{ height: "180px", objectFit: "contain" }}
+                      />
+                    </Link>
+                    <div className="card-body d-flex flex-column">
+                      <h6
+                        className="card-title fw-bold text-truncate"
+                        title={item.name}
+                      >
+                        {item.name}
+                      </h6>
+                      <p className="text-danger fw-bold mt-auto">
+                        {formatPrice(item.price)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

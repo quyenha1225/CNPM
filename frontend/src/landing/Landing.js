@@ -1,54 +1,45 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Banner from "./Banner";
-import FeatureProduct, { featuredProducts } from "./FeatureProduct";
+import FeatureProduct from "./FeatureProduct";
 import ScrollToTopOnMount from "../template/ScrollToTopOnMount";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "react-router-dom";
 import FlashSale from "./FlashSale";
-import { getProducts } from "../api/products";
 
 function Landing() {
+  const [products, setProducts] = useState([]); // State lưu sản phẩm từ DB
+  const [loading, setLoading] = useState(true);
   const featuredPerPage = 6;
-  const [dbProducts, setDbProducts] = useState([]);
   const [featuredPage, setFeaturedPage] = useState(1);
   const featuredTopRef = useRef(null);
-  const visibleProducts = dbProducts.length > 0 ? dbProducts : featuredProducts;
-  const featuredTotalPages = Math.max(1, Math.ceil(visibleProducts.length / featuredPerPage));
 
+  // 1. Gọi API lấy danh sách sản phẩm thật từ Backend
   useEffect(() => {
-    let isMounted = true;
-
-    getProducts()
-      .then((products) => {
-        if (isMounted) {
-          setDbProducts(products);
-        }
+    fetch("http://localhost:3001/api/products")
+      .then((res) => res.json())
+      .then((data) => {
+        setProducts(data);
+        setLoading(false);
       })
-      .catch(() => {
-        if (isMounted) {
-          setDbProducts([]);
-        }
+      .catch((err) => {
+        console.error("Lỗi tải sản phẩm trang chủ:", err);
+        setLoading(false);
       });
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
+
+  // 2. Tính toán phân trang dựa trên số lượng sản phẩm
+  const featuredTotalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(products.length / featuredPerPage));
+  }, [products, featuredPerPage]);
 
   const featuredPageProducts = useMemo(() => {
     const startIndex = (featuredPage - 1) * featuredPerPage;
-    return visibleProducts.slice(startIndex, startIndex + featuredPerPage);
-  }, [featuredPage, featuredPerPage, visibleProducts]);
+    return products.slice(startIndex, startIndex + featuredPerPage);
+  }, [featuredPage, featuredPerPage, products]);
 
   const featuredPageNumbers = useMemo(() => {
     return Array.from({ length: featuredTotalPages }, (_, index) => index + 1);
   }, [featuredTotalPages]);
-
-  useEffect(() => {
-    if (featuredPage > featuredTotalPages) {
-      setFeaturedPage(featuredTotalPages);
-    }
-  }, [featuredPage, featuredTotalPages]);
 
   function changeFeaturedPage(nextPage) {
     const safePage = Math.min(Math.max(nextPage, 1), featuredTotalPages);
@@ -70,6 +61,7 @@ function Landing() {
 
       <section className="home-category-strip home-reveal-section">
         <div className="container px-lg-5">
+          {/* Phần Khung giờ vàng */}
           <FlashSale />
         </div>
       </section>
@@ -79,13 +71,19 @@ function Landing() {
           <div className="home-section-heading home-products-heading d-flex justify-content-between align-items-center mb-4">
             <div>
               <span className="home-section-kicker">Danh sách sản phẩm</span>
-              <h2 className="fw-bold mb-1">Shop công nghệ cho PC, laptop & linh kiện</h2>
+              <h2 className="fw-bold mb-1">
+                Shop công nghệ cho PC, laptop & linh kiện
+              </h2>
               <p className="text-muted mb-0">
-                Chọn nhanh sản phẩm theo nhu cầu học tập, làm việc, gaming và nâng cấp góc máy.
+                Chọn nhanh sản phẩm theo nhu cầu học tập, làm việc, gaming và
+                nâng cấp góc máy.
               </p>
             </div>
 
-            <Link to="/products" className="btn btn-outline-dark home-products-main-link">
+            <Link
+              to="/products"
+              className="btn btn-outline-dark home-products-main-link"
+            >
               Xem danh sách sản phẩm
             </Link>
           </div>
@@ -103,9 +101,14 @@ function Landing() {
                 <FontAwesomeIcon icon={["fas", "laptop"]} />
               </span>
               <strong>Laptop</strong>
-              <small>Mỏng nhẹ, pin tốt, cấu hình phù hợp đi học và đi làm.</small>
+              <small>
+                Mỏng nhẹ, pin tốt, cấu hình phù hợp đi học và đi làm.
+              </small>
             </Link>
-            <Link to="/category/linh-kien-pc" className="home-product-summary-card">
+            <Link
+              to="/category/linh-kien-pc"
+              className="home-product-summary-card"
+            >
               <span>
                 <FontAwesomeIcon icon={["fas", "microchip"]} />
               </span>
@@ -117,14 +120,20 @@ function Landing() {
                 <FontAwesomeIcon icon={["fas", "tv"]} />
               </span>
               <strong>Màn hình & setup</strong>
-              <small>Hoàn thiện góc máy với màn hình, chuột, phím và phụ kiện.</small>
+              <small>
+                Hoàn thiện góc máy với màn hình, chuột, phím và phụ kiện.
+              </small>
             </Link>
           </div>
 
+          {/* PHẦN ĐANG ĐƯỢC QUAN TÂM */}
           <div className="home-product-motion-note" ref={featuredTopRef}>
             <div>
               <span className="home-section-kicker">Đang được quan tâm</span>
-              <strong>{visibleProducts.length} mẫu nổi bật cho học tập, làm việc và gaming tại nhà.</strong>
+              <strong>
+                {products.length} mẫu nổi bật cho học tập, làm việc và gaming
+                tại nhà.
+              </strong>
             </div>
             <span className="home-feature-page-count">
               Trang {featuredPage}/{featuredTotalPages}
@@ -132,28 +141,50 @@ function Landing() {
           </div>
 
           <div className="home-product-focus-row">
-            <Link to="/category/laptop">
-              Laptop học tập, văn phòng
-            </Link>
-            <Link to="/products">
-              PC gaming build sẵn
-            </Link>
-            <Link to="/category/linh-kien-pc">
-              Linh kiện nâng cấp
-            </Link>
-            <Link to="/category/man-hinh">
-              Màn hình setup
-            </Link>
+            <Link to="/category/laptop">Laptop học tập, văn phòng</Link>
+            <Link to="/products">PC gaming build sẵn</Link>
+            <Link to="/category/linh-kien-pc">Linh kiện nâng cấp</Link>
+            <Link to="/category/man-hinh">Màn hình setup</Link>
           </div>
 
-          <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 home-feature-grid" key={featuredPage}>
-            {featuredPageProducts.map((product, index) => (
-              <FeatureProduct key={product.to || product.id} product={product} index={index} />
-            ))}
+          <div
+            className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 home-feature-grid"
+            key={featuredPage}
+          >
+            {loading ? (
+              <div className="col-12 text-center py-4">
+                <div
+                  className="spinner-border text-primary"
+                  role="status"
+                ></div>
+                <p className="mt-2 text-muted">Đang tải sản phẩm nổi bật...</p>
+              </div>
+            ) : (
+              featuredPageProducts.map((product, index) => (
+                <FeatureProduct
+                  key={product.id}
+                  product={{
+                    to: `/products/${product.id}`,
+                    image: product.image || product.image_url, // Lấy linh hoạt cả 2 thuộc tính ảnh từ DB
+                    name: product.name,
+                    price: product.price, // Truyền dạng số thô để FeatureProduct tự format
+                    badge: product.categoryName || "Mới",
+                    type: product.brand || "Công nghệ",
+                    detail:
+                      product.description ||
+                      "Sản phẩm công nghệ chất lượng cao.",
+                  }}
+                  index={index}
+                />
+              ))
+            )}
           </div>
 
           {featuredTotalPages > 1 && (
-            <nav className="product-pagination home-feature-pagination" aria-label="Phân trang sản phẩm nổi bật">
+            <nav
+              className="product-pagination home-feature-pagination"
+              aria-label="Phân trang sản phẩm nổi bật"
+            >
               <button
                 type="button"
                 className="product-page-btn"
@@ -204,7 +235,11 @@ function Landing() {
               </p>
 
               <div className="home-intro-actions">
-                <Link to="/products" className="btn btn-dark btn-lg home-dark-cta" replace>
+                <Link
+                  to="/products"
+                  className="btn btn-dark btn-lg home-dark-cta"
+                  replace
+                >
                   Khám phá sản phẩm
                 </Link>
                 <Link to="/category/linh-kien-pc" className="home-outline-cta">

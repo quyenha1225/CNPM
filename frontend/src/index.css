@@ -595,6 +595,7 @@ main {
   box-shadow: 0 10px 24px rgba(32, 201, 151, 0.22);
 }
 
+/* Flash sale / khung gio vang */
 .flash-sale {
   position: relative;
   overflow: hidden;
@@ -894,7 +895,14 @@ main {
   }
 }
 
-
+.home-intro {
+  position: relative;
+  overflow: hidden;
+  padding-top: clamp(2.6rem, 5vw, 4.6rem);
+  padding-bottom: clamp(2.4rem, 5vw, 4.2rem);
+  background:
+    linear-gradient(135deg, #ffffff 0%, #f5fbfd 50%, #f8fafc 100%) !important;
+}
 
 .home-intro::before {
   content: "";
@@ -2821,16 +2829,18 @@ main {
   .home-hero-metrics,
   .flash-sale-icon,
   .flash-sale-clock-box,
-  .flash-sale-card 
+  .flash-sale-card {
+    animation: none !important;
+    transition: none !important;
+  }
 
   .home-banner-kicker,
   .home-banner-title,
   .home-banner-text,
   .home-hero-actions,
   .home-hero-metrics,
-  .flash-sale-card 
-  {
-    animation: none !important;
-    transition: none !important;
+  .flash-sale-card {
+    opacity: 1;
+    transform: none;
   }
 }

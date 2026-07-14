@@ -1,223 +1,184 @@
-import React, { useState } from "react";
-import { useCart } from "../context/CartContext";
+
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import ScrollToTopOnMount from "../template/ScrollToTopOnMount";
+import { mockProductsFromMySQL } from "../products/ProductList";
 import { getProductImage } from "../products/productImages";
-import "./cart.css";
+import { getCartItems, saveCartItems } from "./cartStorage";
+
+const priceFormatter = new Intl.NumberFormat("vi-VN");
+
+function formatCurrency(value) {
+  return `${priceFormatter.format(Math.round(value))} đ`;
+}
+
+function getSalePrice(product) {
+  return product.percent_off > 0
+    ? product.price - (product.percent_off * product.price) / 100
+    : product.price;
+}
 
 function Cart() {
-  const { cartItems, removeFromCart, updateQuantity, getTotalPrice, clearCart } = useCart();
+  const [cartItems, setCartItems] = useState(() => getCartItems());
   const [orderStatus, setOrderStatus] = useState("");
 
-  const handleQuantityChange = (productId, newQuantity) => {
-    if (newQuantity > 0) {
-      updateQuantity(productId, newQuantity);
-    }
-  };
+  const productMap = useMemo(() => {
+    return new Map(mockProductsFromMySQL.map((product) => [product.id, product]));
+  }, []);
 
-  const handleRemoveItem = (productId) => {
-    removeFromCart(productId);
-  };
+  const cartRows = useMemo(() => {
+    return cartItems
+      .map((item) => {
+        const product = productMap.get(item.id);
+        if (!product) return null;
 
-  // Logic thanh toán từ nhánh HEAD
-  const handleCheckout = () => {
-    clearCart();
-    setOrderStatus("Đã tiếp nhận đơn hàng. Gearxin sẽ liên hệ xác nhận trong ít phút.");
-  };
+        const salePrice = getSalePrice(product);
 
-  if (cartItems.length === 0) {
-    return (
-      <div className="container cart-container mt-5 mb-5">
-        <ScrollToTopOnMount />
-        <div className="row justify-content-center">
-          <div className="col-md-8 text-center">
-            {/* Hiển thị thông báo khi thanh toán thành công */}
-            {orderStatus && (
-              <div className="alert alert-success mb-4" role="alert">
-                <FontAwesomeIcon icon={["fas", "check-circle"]} className="me-2" />
-                {orderStatus}
-              </div>
-            )}
-            <div className="empty-cart-container p-5 border rounded bg-light">
-              <div className="empty-cart-icon mb-3">
-                <FontAwesomeIcon icon={["fas", "shopping-cart"]} size="3x" className="text-muted" />
-              </div>
-              <h2 className="empty-cart-title h4">Giỏ hàng của bạn trống</h2>
-              <p className="empty-cart-text text-muted mb-4">
-                Hãy thêm một số sản phẩm vào giỏ hàng của bạn để bắt đầu mua sắm!
-              </p>
-              <Link to="/products" className="btn btn-primary empty-cart-btn">
-                <FontAwesomeIcon icon={["fas", "arrow-left"]} className="me-2" /> Tiếp tục mua sắm
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+        return {
+          ...item,
+          product,
+          salePrice,
+          lineTotal: salePrice * item.quantity,
+          originalTotal: product.price * item.quantity,
+        };
+      })
+      .filter(Boolean);
+  }, [cartItems, productMap]);
+
+  const subtotal = cartRows.reduce((total, item) => total + item.lineTotal, 0);
+  const originalTotal = cartRows.reduce((total, item) => total + item.originalTotal, 0);
+  const savedTotal = Math.max(0, originalTotal - subtotal);
+
+  function syncCart(nextItems) {
+    setCartItems(nextItems);
+    saveCartItems(nextItems);
+  }
+
+  function updateQuantity(productId, quantity) {
+    const safeQuantity = Math.max(1, quantity);
+    syncCart(
+      cartItems.map((item) =>
+        item.id === productId ? { ...item, quantity: safeQuantity } : item
+      )
     );
   }
 
-  const totalPrice = getTotalPrice();
-  const shippingCost = 30000; // Phí vận chuyển cố định
-  const finalTotal = totalPrice + shippingCost;
+  function removeItem(productId) {
+    syncCart(cartItems.filter((item) => item.id !== productId));
+  }
+
+  function checkout() {
+    syncCart([]);
+    setOrderStatus("Đã tiếp nhận đơn hàng. Gearxin sẽ liên hệ xác nhận trong ít phút.");
+  }
 
   return (
-    <div className="container cart-container mt-4 mb-5">
+    <div className="cart-page">
       <ScrollToTopOnMount />
-      <div className="row mb-4">
-        <div className="col-lg-8">
-          <div className="cart-header d-flex align-items-center mb-4">
-            <FontAwesomeIcon icon={["fas", "shopping-cart"]} style={{ marginRight: "12px", fontSize: "1.5rem", color: "#667eea" }} />
-            <h2 className="m-0">Giỏ hàng của bạn</h2>
+
+      <div className="container">
+        <div className="cart-heading">
+          <div>
+            <span className="cart-kicker">Giỏ hàng</span>
+            <h1>Sản phẩm đã chọn</h1>
+            <p>Kiểm tra sản phẩm top bạn vừa chọn trước khi đặt hàng.</p>
           </div>
 
-          {/* Bảng sản phẩm */}
-          <div className="cart-table-responsive">
-            <table className="table cart-table align-middle">
-              <thead className="table-light">
-                <tr>
-                  <th>Sản phẩm</th>
-                  <th>Giá</th>
-                  <th className="text-center">Số lượng</th>
-                  <th>Tổng</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {cartItems.map((item) => (
-                  <tr key={item.id}>
-                    <td>
-                      <div className="d-flex align-items-center">
-                        <img
-                          // Dùng hàm lấy ảnh thật thay vì ảnh fix cứng
-                          src={getProductImage(item)}
-                          alt={item.name}
-                          className="img-fluid rounded"
-                          style={{ width: "80px", height: "80px", objectFit: "cover", marginRight: "15px" }}
-                        />
-                        <div>
-                          <h6 className="mb-0">
-                            <Link to={`/products/${item.id}`} className="text-decoration-none text-dark">
-                              {item.name}
-                            </Link>
-                          </h6>
-                          <small className="text-muted">{item.brand || item.category || `ID: ${item.id}`}</small>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="price-cell fw-semibold">
-                        {item.price.toLocaleString("vi-VN")}đ
-                      </div>
-                    </td>
-                    <td>
-                      <div className="input-group input-group-sm mx-auto" style={{ width: "110px" }}>
-                        <button
-                          className="btn btn-outline-secondary"
-                          type="button"
-                          disabled={item.quantity === 1}
-                          onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
-                        >
-                          <FontAwesomeIcon icon={["fas", "minus"]} />
-                        </button>
-                        <input
-                          type="number"
-                          className="form-control text-center"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            handleQuantityChange(item.id, parseInt(e.target.value) || 1)
-                          }
-                          min="1"
-                        />
-                        <button
-                          className="btn btn-outline-secondary"
-                          type="button"
-                          onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                        >
-                          <FontAwesomeIcon icon={["fas", "plus"]} />
-                        </button>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="total-cell fw-bold text-primary">
-                        {(item.price * item.quantity).toLocaleString("vi-VN")}đ
-                      </div>
-                    </td>
-                    <td className="text-end">
-                      <button
-                        className="btn btn-sm btn-outline-danger"
-                        onClick={() => handleRemoveItem(item.id)}
-                        title="Xóa sản phẩm"
-                      >
-                        <FontAwesomeIcon icon={["fas", "trash"]} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Link to="/products" className="cart-continue-link">
+            <FontAwesomeIcon icon={["fas", "arrow-left"]} />
+            Tiếp tục mua sắm
+          </Link>
+        </div>
 
-          {/* Nút tiếp tục mua sắm */}
-          <div className="mt-4 d-none d-md-block">
-            <Link to="/products" className="btn btn-outline-primary">
-              <FontAwesomeIcon icon={["fas", "arrow-left"]} className="me-2" /> Tiếp tục mua sắm
+        {orderStatus && (
+          <div className="cart-status" role="status">
+            <FontAwesomeIcon icon={["fas", "check-circle"]} />
+            <span>{orderStatus}</span>
+          </div>
+        )}
+
+        {cartRows.length === 0 ? (
+          <section className="cart-empty">
+            <FontAwesomeIcon icon={["fas", "shopping-cart"]} />
+            <h2>Giỏ hàng đang trống</h2>
+            <p>Chọn một sản phẩm nổi bật hoặc xem danh sách sản phẩm để thêm vào giỏ.</p>
+            <Link to="/" className="cart-primary-link">
+              Xem sản phẩm nổi bật
             </Link>
-          </div>
-        </div>
+          </section>
+        ) : (
+          <div className="cart-layout">
+            <section className="cart-list" aria-label="Sản phẩm trong giỏ">
+              {cartRows.map(({ product, quantity, salePrice, lineTotal }) => (
+                <article className="cart-item" key={product.id}>
+                  <Link to={`/products/${product.id}`} className="cart-item-media">
+                    <img src={getProductImage(product)} alt={product.name} />
+                  </Link>
 
-        {/* Bản tóm tắt đơn hàng */}
-        <div className="col-lg-4 mt-4 mt-lg-0">
-          <div className="card shadow-sm border-0">
-            <div className="card-body p-4">
-              <h5 className="card-title mb-4">Tóm tắt đơn hàng</h5>
-              
-              <div className="d-flex justify-content-between mb-3">
-                <span className="text-muted">Tổng tiền hàng:</span>
-                <span className="fw-semibold">{totalPrice.toLocaleString("vi-VN")}đ</span>
+                  <div className="cart-item-info">
+                    <span>{product.brand || product.category}</span>
+                    <h2>
+                      <Link to={`/products/${product.id}`}>{product.name}</Link>
+                    </h2>
+                    <strong>{formatCurrency(salePrice)}</strong>
+                  </div>
+
+                  <div className="cart-quantity-control" aria-label="Số lượng">
+                    <button
+                      type="button"
+                      aria-label={`Giảm số lượng ${product.name}`}
+                      disabled={quantity === 1}
+                      onClick={() => updateQuantity(product.id, quantity - 1)}
+                    >
+                      <FontAwesomeIcon icon={["fas", "minus"]} />
+                    </button>
+                    <strong>{quantity}</strong>
+                    <button
+                      type="button"
+                      aria-label={`Tăng số lượng ${product.name}`}
+                      onClick={() => updateQuantity(product.id, quantity + 1)}
+                    >
+                      <FontAwesomeIcon icon={["fas", "plus"]} />
+                    </button>
+                  </div>
+
+                  <div className="cart-item-total">
+                    <strong>{formatCurrency(lineTotal)}</strong>
+                    <button type="button" onClick={() => removeItem(product.id)}>
+                      <FontAwesomeIcon icon={["fas", "trash-alt"]} />
+                      Xóa
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </section>
+
+            <aside className="cart-summary" aria-label="Tóm tắt đơn hàng">
+              <h2>Tóm tắt đơn hàng</h2>
+              <div>
+                <span>Tạm tính</span>
+                <strong>{formatCurrency(subtotal)}</strong>
               </div>
-              
-              <div className="d-flex justify-content-between mb-3">
-                <span className="text-muted">Số lượng sản phẩm:</span>
-                <span className="fw-semibold">{cartItems.length} loại</span>
+              <div>
+                <span>Tiết kiệm</span>
+                <strong>{formatCurrency(savedTotal)}</strong>
               </div>
-              
-              <div className="d-flex justify-content-between mb-3 border-bottom pb-3">
-                <span className="text-muted">Phí vận chuyển:</span>
-                <span className="fw-semibold">{shippingCost.toLocaleString("vi-VN")}đ</span>
+              <div>
+                <span>Giao hàng</span>
+                <strong>Liên hệ</strong>
               </div>
-              
-              <div className="d-flex justify-content-between mb-4">
-                <span className="fw-bold fs-5">Tổng cộng:</span>
-                <span className="fw-bold fs-5 text-primary">{finalTotal.toLocaleString("vi-VN")}đ</span>
+              <div className="cart-summary-total">
+                <span>Tổng thanh toán</span>
+                <strong>{formatCurrency(subtotal)}</strong>
               </div>
-              
-              <button className="btn btn-primary w-100 py-2 mb-3" onClick={handleCheckout}>
-                <FontAwesomeIcon icon={["fas", "credit-card"]} className="me-2" /> Tiến hành thanh toán
+              <button type="button" className="cart-checkout-btn" onClick={checkout}>
+                <FontAwesomeIcon icon={["fas", "shopping-bag"]} />
+                Đặt hàng ngay
               </button>
-
-              <Link to="/products" className="btn btn-outline-secondary w-100 py-2 mb-3 d-md-none">
-                 <FontAwesomeIcon icon={["fas", "arrow-left"]} className="me-2"/> Tiếp tục mua sắm
-              </Link>
-
-              {/* Thông tin bổ sung */}
-              <div className="small text-muted mt-4">
-                <div className="mb-2">
-                  <FontAwesomeIcon icon={["fas", "check"]} className="text-success me-2" />
-                  Miễn phí vận chuyển cho đơn từ 500.000đ
-                </div>
-                <div className="mb-2">
-                  <FontAwesomeIcon icon={["fas", "check"]} className="text-success me-2" />
-                  Hoàn tiền 100% nếu không hài lòng
-                </div>
-                <div>
-                  <FontAwesomeIcon icon={["fas", "check"]} className="text-success me-2" />
-                  Giao hàng trong 2-3 ngày
-                </div>
-              </div>
-            </div>
+            </aside>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
