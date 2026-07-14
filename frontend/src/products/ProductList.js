@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom"; // Thêm 2 hook của React Router
+import { getProducts } from "../api/products";
 import Product from "./Product";
 
 // CÂY DANH MỤC
@@ -58,14 +59,8 @@ function ProductList({ category, setCategory, brand, setBrand }) {
     const fetchProducts = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("http://localhost:3001/api/products");
-        const data = await response.json();
-
-        if (Array.isArray(data)) {
-          setDbProducts(data);
-        } else {
-          setDbProducts([]);
-        }
+        const data = await getProducts();
+        setDbProducts(data);
       } catch (error) {
         console.error("Lỗi gọi API:", error);
         setDbProducts([]);

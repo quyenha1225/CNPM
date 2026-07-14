@@ -1,25 +1,54 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Banner from "./Banner";
 import FeatureProduct, { featuredProducts } from "./FeatureProduct";
 import ScrollToTopOnMount from "../template/ScrollToTopOnMount";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "react-router-dom";
 import FlashSale from "./FlashSale";
+import { getProducts } from "../api/products";
 
 function Landing() {
   const featuredPerPage = 6;
+  const [dbProducts, setDbProducts] = useState([]);
   const [featuredPage, setFeaturedPage] = useState(1);
   const featuredTopRef = useRef(null);
-  const featuredTotalPages = Math.ceil(featuredProducts.length / featuredPerPage);
+  const visibleProducts = dbProducts.length > 0 ? dbProducts : featuredProducts;
+  const featuredTotalPages = Math.max(1, Math.ceil(visibleProducts.length / featuredPerPage));
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getProducts()
+      .then((products) => {
+        if (isMounted) {
+          setDbProducts(products);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setDbProducts([]);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const featuredPageProducts = useMemo(() => {
     const startIndex = (featuredPage - 1) * featuredPerPage;
-    return featuredProducts.slice(startIndex, startIndex + featuredPerPage);
-  }, [featuredPage, featuredPerPage]);
+    return visibleProducts.slice(startIndex, startIndex + featuredPerPage);
+  }, [featuredPage, featuredPerPage, visibleProducts]);
 
   const featuredPageNumbers = useMemo(() => {
     return Array.from({ length: featuredTotalPages }, (_, index) => index + 1);
   }, [featuredTotalPages]);
+
+  useEffect(() => {
+    if (featuredPage > featuredTotalPages) {
+      setFeaturedPage(featuredTotalPages);
+    }
+  }, [featuredPage, featuredTotalPages]);
 
   function changeFeaturedPage(nextPage) {
     const safePage = Math.min(Math.max(nextPage, 1), featuredTotalPages);
@@ -95,7 +124,7 @@ function Landing() {
           <div className="home-product-motion-note" ref={featuredTopRef}>
             <div>
               <span className="home-section-kicker">Đang được quan tâm</span>
-              <strong>{featuredProducts.length} mẫu nổi bật cho học tập, làm việc và gaming tại nhà.</strong>
+              <strong>{visibleProducts.length} mẫu nổi bật cho học tập, làm việc và gaming tại nhà.</strong>
             </div>
             <span className="home-feature-page-count">
               Trang {featuredPage}/{featuredTotalPages}
@@ -119,7 +148,7 @@ function Landing() {
 
           <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 home-feature-grid" key={featuredPage}>
             {featuredPageProducts.map((product, index) => (
-              <FeatureProduct key={product.to} product={product} index={index} />
+              <FeatureProduct key={product.to || product.id} product={product} index={index} />
             ))}
           </div>
 

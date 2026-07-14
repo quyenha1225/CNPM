@@ -186,8 +186,52 @@ export const featuredProducts = [
   },
 ];
 
+const categoryLabels = {
+  "dien-thoai": "Điện thoại",
+  laptop: "Laptop",
+  "phu-kien": "Phụ kiện",
+  "linh-kien-pc": "Linh kiện PC",
+  "man-hinh": "Màn hình",
+};
+
+const categoryImages = {
+  "dien-thoai": Image,
+  laptop: ImageAlt,
+  "phu-kien": Image,
+  "linh-kien-pc": ImageDark,
+  "man-hinh": Image,
+};
+
+function formatPrice(price) {
+  return new Intl.NumberFormat("vi-VN").format(Number(price) || 0) + " đ";
+}
+
+function mapProductToFeatureCard(product) {
+  const categoryName = categoryLabels[product.category] || product.category || "Sản phẩm";
+  const image =
+    product.image ||
+    product.image_url ||
+    categoryImages[product.category] ||
+    ImageAlt;
+
+  return {
+    name: product.name,
+    price: typeof product.price === "number" ? formatPrice(product.price) : product.price,
+    type: product.type || categoryName,
+    badge: product.badge || product.brand || "Nổi bật",
+    detail:
+      product.detail ||
+      `Sản phẩm ${categoryName.toLowerCase()} đang có tại Gearxin Store.`,
+    specs: product.specs || [product.brand, categoryName, "Còn hàng"].filter(Boolean).slice(0, 3),
+    image,
+    to: product.to || `/products/${product.id}`,
+  };
+}
+
 function FeatureProduct({ product, index = 0 }) {
-  const selectedProduct = product || featuredProducts[index % featuredProducts.length];
+  const selectedProduct = mapProductToFeatureCard(
+    product || featuredProducts[index % featuredProducts.length]
+  );
 
   return (
     <div className="col">

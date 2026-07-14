@@ -3,8 +3,8 @@ import { Link, useParams } from "react-router-dom";
 import ScrollToTopOnMount from "../../template/ScrollToTopOnMount";
 import { useCart } from "../../context/CartContext";
 import { toast } from "../../utils/Toast";
+import { getProductById } from "../../api/products";
 import fallbackImage from "../../nillkin-case-1.jpg";
-import { mockProductsFromMySQL } from "../ProductList";
 
 function formatPrice(price) {
   return new Intl.NumberFormat("vi-VN").format(price) + " đ";
@@ -29,22 +29,14 @@ function ProductDetail() {
     const fetchProduct = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("http://localhost:3001/api/products");
-        if (!response.ok) {
-          throw new Error("API unavailable");
-        }
-
-        const data = await response.json();
-        const foundProduct = Array.isArray(data)
-          ? data.find((item) => String(item.id) === String(id))
-          : null;
+        const foundProduct = await getProductById(id);
 
         if (isMounted) {
-          setProduct(foundProduct || mockProductsFromMySQL.find((item) => String(item.id) === String(id)) || null);
+          setProduct(foundProduct || null);
         }
       } catch (error) {
         if (isMounted) {
-          setProduct(mockProductsFromMySQL.find((item) => String(item.id) === String(id)) || null);
+          setProduct(null);
         }
       } finally {
         if (isMounted) {
@@ -156,22 +148,6 @@ function ProductDetail() {
               <strong>Đặc điểm nổi bật:</strong> Sản phẩm công nghệ thuộc nhóm {product.category}, phù hợp để nâng cấp góc làm việc, học tập và giải trí hằng ngày.
             </p>
 
-            <div className="d-flex flex-wrap gap-2">
-              <button className="btn btn-dark px-4" onClick={handleAddToCart}>
-                Thêm vào giỏ hàng
-              </button>
-              <button className="btn btn-outline-dark px-4" onClick={handleBuyNow}>
-                Mua ngay
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
-export default ProductDetail;
             <div className="d-flex gap-3 mt-auto">
               <button
                 type="button"

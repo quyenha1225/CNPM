@@ -20,7 +20,12 @@ export class ProductsService {
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.category_id
       LEFT JOIN brands b ON p.brand_id = b.brand_id
-      LEFT JOIN product_images pi ON p.product_id = pi.product_id AND pi.is_thumbnail = TRUE
+      LEFT JOIN (
+        SELECT product_id, MIN(image_url) AS image_url
+        FROM product_images
+        WHERE is_thumbnail = TRUE
+        GROUP BY product_id
+      ) pi ON p.product_id = pi.product_id
       WHERE p.product_status = 'ACTIVE'
     `;
     
