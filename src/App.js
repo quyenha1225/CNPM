@@ -5,7 +5,7 @@ import ProductDetail from "./products/detail/ProductDetail";
 import Landing from "./landing/Landing"; 
 import ProductList from "./products/ProductList";
 import Cart from "./cart/Cart";
-import About from "./about/About"; // <-- BƯỚC 1: THÊM DÒNG IMPORT NÀY
+import About from "./about/About";
 
 const categorySlugMap = {
   laptop: "Laptop",
@@ -37,20 +37,16 @@ function App() {
   const [currentCategory, setCurrentCategory] = useState("");
   const [currentBrand, setCurrentBrand] = useState("");
 
-  // =========================================================================
-  // BỔ SUNG STATE QUẢN LÝ ĐĂNG NHẬP (Giữ nguyên các State cũ của bạn ở trên)
-  // =========================================================================
-  const [userRole, setUserRole] = useState(null); // null: chưa log, 'admin': Admin, 'user': Khách
+  // Logic quản lý Role & Trạng thái Đăng nhập tập trung
+  const [userRole, setUserRole] = useState(null); // null, 'admin', 'user'
   const [usernameInput, setUsernameInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
 
   return (
     <Template setCategory={setCurrentCategory} setBrand={setCurrentBrand}>
       <Routes>
-        {/* 1. Trang chủ mặc định */}
         <Route path="/" element={<Landing />} />
         
-        {/* 2. Trang tất cả sản phẩm */}
         <Route 
           path="/products" 
           element={
@@ -63,7 +59,6 @@ function App() {
           } 
         />
 
-        {/* 3. Trang sản phẩm theo danh mục */}
         <Route
           path="/category/:categorySlug"
           element={
@@ -76,209 +71,201 @@ function App() {
           }
         />
 
-        {/* 4. Trang chi tiết sản phẩm */}
         <Route path="/products/:id" element={<ProductDetail />} />
-
-        {/* 5. Giỏ hàng */}
         <Route path="/cart" element={<Cart />} />
+        <Route path="/about" element={<About />} />
         
-        {/* 6. Trang Giới thiệu đã sửa đổi */}
-        <Route path="/about" element={<About />} /> {/* <-- BƯỚC 2: THAY ĐỔI ĐOẠN NÀY */}
-        
-        {/* Trang Đăng nhập / Tài khoản (BẢN THIẾT KẾ VIP ĐẬM CHẤT CÔNG NGHỆ) */}
+        {/* Tuyến đường Đăng nhập tích hợp giao diện KeroUI Premium */}
         <Route 
           path="/login" 
           element={
-            <div className="container-fluid d-flex align-items-center justify-content-center" style={{ minHeight: '70vh', background: '#0f172a', borderRadius: '16px', margin: '40px 0', padding: '40px 20px' }}>
+            <div className="container-fluid p-0" style={{ minHeight: '80vh', backgroundColor: '#f4f6f9' }}>
               
-              {/* TRƯỜNG HỢP A: CHƯA ĐĂNG NHẬP -> HIỂN THỊ FORM LOGIN HIỆN ĐẠI */}
+              {/* TRƯỜNG HỢP 1: CHƯA ĐĂNG NHẬP (Hiển thị Form sạch sẽ, gọn gàng) */}
               {!userRole && (
-                <div className="card p-4 shadow-lg border-0 position-relative text-white" style={{ width: '100%', maxWidth: '420px', background: '#1e293b', borderRadius: '20px', overflow: 'hidden' }}>
-                  
-                  {/* Các vòng tròn hiệu ứng phát sáng Neon chìm phía sau card */}
-                  <div className="position-absolute" style={{ width: '150px', height: '150px', background: 'rgba(59, 130, 246, 0.25)', filter: 'blur(40px)', top: '-30px', left: '-30px', zIndex: 0 }}></div>
-                  <div className="position-absolute" style={{ width: '150px', height: '150px', background: 'rgba(168, 85, 247, 0.25)', filter: 'blur(40px)', bottom: '-30px', right: '-30px', zIndex: 0 }}></div>
-
-                  <div className="position-relative" style={{ zIndex: 1 }}>
+                <div className="d-flex align-items-center justify-content-center py-5" style={{ minHeight: '75vh' }}>
+                  <div className="card shadow-lg p-4 border-0" style={{ width: '100%', maxWidth: '380px', borderRadius: '12px' }}>
                     <div className="text-center mb-4">
-                      <div className="d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '60px', height: '60px', background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)', borderRadius: '16px', boxShadow: '0 0 20px rgba(99, 102, 241, 0.5)' }}>
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                      </div>
-                      <h3 className="fw-bold m-0" style={{ letterSpacing: '0.5px', background: 'linear-gradient(to right, #3b82f6, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>GEARXIN PORTAL</h3>
-                      <p className="text-muted small mt-1 mb-0" style={{ fontSize: '0.8rem' }}>Hệ thống định danh & phân quyền thành viên</p>
+                      <h4 className="fw-bold text-dark m-0" style={{ letterSpacing: '0.5px' }}>ĐĂNG NHẬP</h4>
+                      <p className="text-muted small mb-0">Hệ thống quản lý Gearxin Store</p>
                     </div>
-
                     <div className="mb-3 text-start">
-                      <label className="form-label small fw-semibold text-uppercase text-white-50" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>Tài khoản hệ thống</label>
+                      <label className="form-label small fw-bold text-secondary">Tài khoản</label>
                       <input 
                         type="text" 
-                        className="form-control border-0 text-white px-3 py-2" 
-                        style={{ background: '#334155', borderRadius: '10px', fontSize: '0.9rem' }}
+                        className="form-control" 
                         placeholder="admin hoặc khachhang" 
                         value={usernameInput}
                         onChange={(e) => setUsernameInput(e.target.value)}
+                        style={{ borderRadius: '6px' }}
                       />
                     </div>
-                    
                     <div className="mb-4 text-start">
-                      <label className="form-label small fw-semibold text-uppercase text-white-50" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>Mật khẩu bảo mật</label>
+                      <label className="form-label small fw-bold text-secondary">Mật khẩu</label>
                       <input 
                         type="password" 
-                        className="form-control border-0 text-white px-3 py-2" 
-                        style={{ background: '#334155', borderRadius: '10px', fontSize: '0.9rem' }}
+                        className="form-control" 
                         placeholder="admin123 hoặc user123" 
                         value={passwordInput}
                         onChange={(e) => setPasswordInput(e.target.value)}
+                        style={{ borderRadius: '6px' }}
                       />
                     </div>
-                    
                     <button 
-                      className="btn btn-primary w-100 py-2.5 fw-bold text-uppercase border-0" 
-                      style={{ borderRadius: '12px', background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)', boxShadow: '0 4px 15px rgba(37, 99, 235, 0.4)', fontSize: '0.9rem', letterSpacing: '0.5px' }}
+                      className="btn btn-primary w-100 py-2 fw-bold text-uppercase" 
+                      style={{ borderRadius: '6px', background: '#e74c3c', border: 'none' }}
                       onClick={() => {
                         if (usernameInput === 'admin' && passwordInput === 'admin123') {
                           setUserRole('admin');
-                          alert('Đăng nhập thành công với quyền: QUẢN TRỊ VIÊN (ADMIN)');
                         } else if (usernameInput === 'khachhang' && passwordInput === 'user123') {
                           setUserRole('user');
-                          alert('Đăng nhập thành công với quyền: KHÁCH HÀNG');
                         } else {
-                          alert('Sai tài khoản hoặc mật khẩu! (Gợi ý: admin/admin123 hoặc khachhang/user123)');
+                          alert('Sai tài khoản hoặc mật khẩu! (admin/admin123 hoặc khachhang/user123)');
                         }
                       }}
                     >
-                      Kích Hoạt Phiên Làm Việc
+                      Đăng Nhập
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* TRƯỜNG HỢP B: ĐĂNG NHẬP VỚI QUYỀN KHÁCH HÀNG (USER) */}
-              {userRole === 'user' && (
-                <div className="card p-5 border-0 shadow text-center text-white" style={{ width: '100%', maxWidth: '550px', background: '#1e293b', borderRadius: '20px' }}>
-                  <div className="d-inline-flex align-items-center justify-content-center mb-3 mx-auto" style={{ width: '70px', height: '70px', background: 'rgba(34, 197, 94, 0.15)', borderRadius: '50%' }}>
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                  </div>
-                  <h3 className="fw-bold mb-2">Xin chào, Khách hàng!</h3>
-                  <p className="text-secondary small px-3">Hệ thống Gearxin đã định danh thành công vai trò người dùng cá nhân. Bạn đã có toàn quyền truy cập mua sắm, tích hợp giỏ hàng và thanh toán sản phẩm.</p>
-                  <div className="mt-4">
-                    <button className="btn btn-outline-danger px-4 py-2 fw-bold" style={{ borderRadius: '10px', fontSize: '0.85rem' }} onClick={() => { setUserRole(null); setUsernameInput(""); setPasswordInput(""); }}>
-                      Đăng Xuất Hệ Thống
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* TRƯỜNG HỢP C: ĐĂNG NHẬP VỚI QUYỀN ADMIN -> DASHBOARD PHÂN CHIA COMPUTER DATABASE CAO CẤP */}
-              {userRole === 'admin' && (
-                <div className="card p-4 border-0 shadow text-white w-100 text-start" style={{ background: '#1e293b', borderRadius: '20px' }}>
-                  <div className="d-flex justify-content-between align-items-center border-bottom border-secondary pb-3 mb-4">
-                    <h3 className="fw-bold m-0 text-uppercase d-flex align-items-center gap-2" style={{ background: 'linear-gradient(to right, #3b82f6, #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontSize: '1.25rem', letterSpacing: '0.5px' }}>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-                      Hệ Thống Quản Trị Cơ Sở Dữ Liệu (Admin)
-                    </h3>
-                    <button className="btn btn-sm btn-danger fw-bold px-3 py-1.5" style={{ borderRadius: '8px', fontSize: '0.8rem' }} onClick={() => { setUserRole(null); setUsernameInput(""); setPasswordInput(""); }}>
-                      Đăng Xuất Admin
-                    </button>
-                  </div>
-
-                  <div className="p-3 mb-4 rounded-3 border border-info border-opacity-25" style={{ background: 'rgba(56, 189, 248, 0.06)', color: '#bae6fd' }}>
-                    <p className="m-0 small"><strong>Kiến trúc phân phối:</strong> Dữ liệu từ thực thể nguồn <code>mockProductsFromMySQL</code> đang được cấu trúc hóa để ánh xạ trực tiếp thành hai phân hệ nhiệm vụ riêng biệt bên dưới.</p>
-                  </div>
+              {/* TRƯỜNG HỢP 2 & 3: ĐÃ ĐĂNG NHẬP -> BẬT GIAO DIỆN KEROUI BẢN PREMIUM */}
+              {userRole && (
+                <div className="d-flex" style={{ minHeight: '80vh' }}>
                   
-                  <div className="row g-4 mb-4">
-                    {/* Phân việc Admin 1 */}
-                    <div className="col-md-6">
-                      <div className="p-3 border border-secondary rounded-3 h-100 d-flex flex-column justify-content-between" style={{ background: '#0f172a' }}>
-                        <div>
-                          <span className="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 mb-2" style={{ fontSize: '0.7rem', borderRadius: '4px' }}>PHÂN HỆ NGHIỆP VỤ 1</span>
-                          <h6 className="fw-bold text-white mb-2">Quản lý Dữ liệu Sản phẩm (CRUD)</h6>
-                          <p className="text-muted small mb-3">Thành viên chịu trách nhiệm thiết kế logic: <strong>Người A</strong></p>
-                          <p className="text-secondary small mb-3">Thao tác xử lý luồng dữ liệu thô đầu vào bao gồm các thuộc tính cốt lõi của sản phẩm như Khởi tạo ID, Tên sản phẩm, Giá thành cơ bản và Cập nhật trạng thái Sale.</p>
-                        </div>
-                        <div className="btn-group btn-group-sm w-100 mt-2">
-                          <button className="btn btn-success fw-bold" style={{ borderTopLeftRadius: '6px', borderBottomLeftRadius: '6px' }} onClick={() => alert('Chức năng nghiệp vụ Người A: Thêm trường sản phẩm mới vào MySQL')}>+ Thêm Dữ Liệu</button>
-                          <button className="btn btn-outline-light fw-bold" style={{ borderTopRightRadius: '6px', borderBottomRightRadius: '6px' }} onClick={() => alert('Chức năng nghiệp vụ Người A: Mở trình điều khiển cập nhật / xóa dữ liệu')}>Hiệu Chỉnh SP</button>
-                        </div>
+                  {/* THANH MENU DỌC BÊN TRÁI (SIDEBAR) */}
+                  <aside className="bg-white border-end d-flex flex-column justify-content-between" style={{ width: '240px', padding: '20px 0' }}>
+                    <div>
+                      <div className="px-4 mb-4">
+                        <h4 className="fw-bold text-danger m-0">KeroUI <span className="text-muted fs-6 fw-normal">v1.0</span></h4>
                       </div>
-                    </div>
-
-                    {/* Phân việc Admin 2 */}
-                    <div className="col-md-6">
-                      <div className="p-3 border border-secondary rounded-3 h-100 d-flex flex-column justify-content-between" style={{ background: '#0f172a' }}>
-                        <div>
-                          <span className="badge bg-purple-subtle text-purple border border-purple-subtle px-2 py-1 mb-2" style={{ fontSize: '0.7rem', borderRadius: '4px', color: '#c084fc', borderColor: '#c084fc' }}>PHÂN HỆ NGHIỆP VỤ 2</span>
-                          <h6 className="fw-bold text-white mb-2">Đồng bộ Hệ thống Lọc & Cấu hình Category</h6>
-                          <p className="text-muted small mb-3">Thành viên chịu trách nhiệm thiết kế logic: <strong>Người B</strong></p>
-                          <p className="text-secondary small mb-3">Thực hiện chuẩn hóa cây dữ liệu đầu ra để phân loại danh mục (Category) và gắn thẻ các hãng thương hiệu công nghệ (Brand Options) đồng bộ ra ngoài Menu chính.</p>
-                        </div>
-                        <div className="btn-group btn-group-sm w-100 mt-2">
-                          <button className="btn btn-outline-info fw-bold" style={{ borderTopLeftRadius: '6px', borderBottomLeftRadius: '6px' }} onClick={() => alert('Chức năng nghiệp vụ Người B: Quản lý thiết lập cây danh mục Category')}>Cấu Hình Loại SP</button>
-                          <button className="btn btn-outline-light fw-bold" style={{ borderTopRightRadius: '6px', borderBottomRightRadius: '6px' }} onClick={() => alert('Chức năng nghiệp vụ Người B: Quản lý gán nhãn Brand tương ứng')}>Thiết Lập Hãng</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bảng Dữ Liệu MySQL Mock Đẹp Mắt */}
-                  <div className="p-3 border border-secondary rounded-3" style={{ background: '#0f172a' }}>
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                      <h6 className="fw-bold m-0 text-white d-flex align-items-center gap-2" style={{ fontSize: '0.9rem' }}>
-                        <div style={{ width: '8px', height: '8px', background: '#3b82f6', borderRadius: '50%' }}></div>
-                        Dữ liệu Sản phẩm mẫu (MySQL Relational Data Stream)
-                      </h6>
-                      <span className="badge bg-dark text-white-50 border border-secondary px-2 py-1" style={{ fontSize: '0.7rem' }}>Trạng thái: Đọc ghi ổn định</span>
+                      
+                      <div className="px-3 mb-2 small text-uppercase text-muted fw-bold" style={{ fontSize: '0.7rem', letterSpacing: '0.5px' }}>Menu</div>
+                      
+                      <ul className="list-unstyled px-2">
+                        <li className="mb-1">
+                          <button className="btn btn-light w-100 text-start fw-bold text-danger py-2 px-3 border-0" style={{ borderRadius: '8px' }}>
+                            <i className="fa-solid fa-chart-pie me-2"></i> Analytics Dashboard
+                          </button>
+                        </li>
+                        <li className="mb-1">
+                          <button className="btn btn-link w-100 text-start text-secondary py-2 px-3 text-decoration-none border-0" onClick={() => alert('Chức năng Management')}>
+                            <i className="fa-solid fa-tasks me-2"></i> Management
+                          </button>
+                        </li>
+                        <li className="mb-1">
+                          <button className="btn btn-link w-100 text-start text-secondary py-2 px-3 text-decoration-none border-0" onClick={() => alert('Chức năng Cấu hình Bảng')}>
+                            <i className="fa-solid fa-table me-2"></i> Tables & DB Source
+                          </button>
+                        </li>
+                      </ul>
                     </div>
                     
-                    <div className="table-responsive" style={{ maxHeight: '220px', overflowY: 'auto', borderRadius: '8px' }}>
-                      <table className="table table-dark table-hover table-borderless align-middle small m-0">
-                        <thead className="table-active text-info" style={{ position: 'sticky', top: 0, zIndex: 1, background: '#1e293b' }}>
-                          <tr>
-                            <th className="px-3 py-2">ID</th>
-                            <th className="py-2">Tên Thiết Bị / Linh Kiện</th>
-                            <th className="py-2">Giá Cơ Bản</th>
-                            <th className="py-2">Category</th>
-                            <th className="py-2">Brand</th>
-                            <th className="py-2 text-center">Giảm giá</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr className="border-bottom border-secondary border-opacity-25">
-                            <td className="px-3 py-2.5 fw-bold text-muted">01</td>
-                            <td className="fw-semibold text-white-50">PC Gaming Shark i5 13400F | RTX 4060 | 16GB RAM</td>
-                            <td className="text-danger fw-bold">18,500,000 đ</td>
-                            <td><span className="badge bg-secondary-subtle text-white border border-secondary-subtle px-2 py-0.5" style={{ fontSize: '0.7rem' }}>PC_Gaming</span></td>
-                            <td className="text-white-50">Khac</td>
-                            <td className="text-center text-danger fw-bold">10%</td>
-                          </tr>
-                          <tr className="border-bottom border-secondary border-opacity-25">
-                            <td className="px-3 py-2.5 fw-bold text-muted">21</td>
-                            <td className="fw-semibold text-white-50">Laptop Asus Vivobook 14 X1404ZA Intel Core i5</td>
-                            <td className="text-danger fw-bold">14,290,000 đ</td>
-                            <td><span className="badge bg-secondary-subtle text-white border border-secondary-subtle px-2 py-0.5" style={{ fontSize: '0.7rem' }}>Laptop</span></td>
-                            <td className="text-white-50">Asus</td>
-                            <td className="text-center text-danger fw-bold">5%</td>
-                          </tr>
-                          <tr>
-                            <td className="px-3 py-2.5 fw-bold text-muted">31</td>
-                            <td className="fw-semibold text-white-50">Laptop MacBook Air M2 8GB / 256GB Chính Hãng</td>
-                            <td className="text-danger fw-bold">24,990,000 đ</td>
-                            <td><span className="badge bg-secondary-subtle text-white border border-secondary-subtle px-2 py-0.5" style={{ fontSize: '0.7rem' }}>Laptop</span></td>
-                            <td className="text-white-50">Apple</td>
-                            <td className="text-center text-muted">0%</td>
-                          </tr>
-                        </tbody>
-                      </table>
+                    <div className="px-3">
+                      <button className="btn btn-outline-dark btn-sm w-100 fw-bold" style={{ borderRadius: '6px' }} onClick={() => { setUserRole(null); setUsernameInput(""); setPasswordInput(""); }}>
+                        <i className="fa-solid fa-sign-out-alt me-2"></i> Đăng Xuất
+                      </button>
                     </div>
-                  </div>
+                  </aside>
+
+                  {/* VÙNG NỘI DUNG CHÍNH BÊN PHẢI (MAIN CONTENT) */}
+                  <main className="flex-grow-1 p-4 text-start">
+                    <div className="d-flex justify-content-between align-items-center mb-4">
+                      <div>
+                        <h4 className="fw-bold text-dark m-0">Analytics</h4>
+                        <p className="text-muted small m-0">Đây là bản mô phỏng dashboard quản trị sử dụng các phần tử giao diện cao cấp.</p>
+                      </div>
+                      <div className="small text-muted">
+                        Quyền hạn: <span className="badge bg-danger text-uppercase">{userRole === 'admin' ? 'Quản trị viên' : 'Khách hàng'}</span>
+                      </div>
+                    </div>
+
+                    {/* HÀNG THỐNG KÊ 3 CARD LỚN (METRICS) */}
+                    <div className="row g-3 mb-4">
+                      <div className="col-md-4">
+                        <div className="card p-3 border-0 shadow-sm" style={{ borderRadius: '12px' }}>
+                          <span className="small text-muted text-uppercase fw-bold">Doanh số mục tiêu</span>
+                          <h2 className="fw-bold my-1 text-dark">1,7M đ</h2>
+                          <small className="text-danger fw-bold">↓ 64.1%</small>
+                        </div>
+                      </div>
+                      <div className="col-md-4">
+                        <div className="card p-3 border-0 shadow-sm" style={{ borderRadius: '12px' }}>
+                          <span className="small text-muted text-uppercase fw-bold">Tổng sản phẩm MySQL</span>
+                          <h2 className="fw-bold my-1 text-dark">9M items</h2>
+                          <small className="text-primary fw-bold">↑ 14.1%</small>
+                        </div>
+                      </div>
+                      <div className="col-md-4">
+                        <div className="card p-3 border-0 shadow-sm" style={{ borderRadius: '12px' }}>
+                          <span className="small text-muted text-uppercase fw-bold">Doanh thu giả lập</span>
+                          <h2 className="fw-bold my-1 text-success">$563</h2>
+                          <small className="text-warning fw-bold">↑ 1.5%</small>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* HÀNG CHỨA BIỂU ĐỒ VÀ PHÂN CHIA HỆ THỐNG DATABASE CỦA NHÓM */}
+                    <div className="row g-4">
+                      {/* Cột Trái: Biểu đồ dạng sóng SVG */}
+                      <div className="col-lg-7">
+                        <div className="card p-3 border-0 shadow-sm h-100" style={{ borderRadius: '12px' }}>
+                          <h6 className="fw-bold text-dark mb-3"><i className="fa-solid fa-wave-square me-2 text-primary"></i>Technical Support Flow</h6>
+                          <div className="d-flex align-items-center gap-2 mb-3">
+                            <h3 className="fw-bold text-dark m-0">↑ 78%</h3>
+                            <span className="badge bg-success-subtle text-success small">+14</span>
+                          </div>
+                          {/* Khung vẽ biểu đồ đồ họa bằng mã SVG nguyên bản */}
+                          <div className="bg-light rounded p-2" style={{ height: '180px' }}>
+                            <svg viewBox="0 0 500 150" width="100%" height="100%">
+                              <path 
+                                d="M0,130 C50,120 100,50 150,90 C200,130 250,140 300,70 C350,10 400,90 450,40 C480,10 500,20 500,20 L500,150 L0,150 Z" 
+                                fill="rgba(46, 204, 113, 0.15)"
+                              />
+                              <path 
+                                d="M0,130 C50,120 100,50 150,90 C200,130 250,140 300,70 C350,10 400,90 450,40 C480,10 500,20 500,20" 
+                                fill="none" 
+                                stroke="#2ecc71" 
+                                strokeWidth="3"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Cột Phải: Bảng phân công công việc thực tế theo Database của nhóm bạn */}
+                      <div className="col-lg-5">
+                        <div className="card p-3 border-0 shadow-sm h-100" style={{ borderRadius: '12px' }}>
+                          <h6 className="fw-bold text-dark mb-3"><i className="fa-solid fa-users-cog me-2 text-danger"></i>Phân Chia Chức Năng Admin</h6>
+                          
+                          <div className="mb-3 p-2 bg-light rounded text-start">
+                            <div className="d-flex justify-content-between">
+                              <span className="small fw-bold text-primary">Phân hệ 1: CRUD Sản phẩm</span>
+                              <span className="badge bg-secondary-subtle text-dark small">Người A</span>
+                            </div>
+                            <p className="m-0 text-muted" style={{ fontSize: '0.8rem' }}>Thực hiện các câu lệnh thêm, sửa, xóa trực tiếp vào danh sách 100 thiết bị của hệ thống.</p>
+                          </div>
+
+                          <div className="p-2 bg-light rounded text-start">
+                            <div className="d-flex justify-content-between">
+                              <span className="small fw-bold text-primary">Phân hệ 2: Cấu hình Bộ lọc</span>
+                              <span className="badge bg-secondary-subtle text-dark small">Người B</span>
+                            </div>
+                            <p className="m-0 text-muted" style={{ fontSize: '0.8rem' }}>Quản lý các mảng dữ liệu phân loại Category và Brand đồng bộ ra ngoài Mega Menu.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  </main>
                 </div>
               )}
 
             </div>
           } 
         />
-        
-        {/* 7. Bắt lỗi trang 404 */}
+
         <Route
           path="*"
           element={
