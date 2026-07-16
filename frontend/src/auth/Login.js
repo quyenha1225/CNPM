@@ -1,10 +1,10 @@
-﻿import { useState } from "react";
+﻿import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { toast } from "../utils/Toast";
-import "./Auth.css";
+import "./Auth.css"; // Giữ lại CSS tuyệt đẹp của bạn!
 
-function Login() {
+function Login({ setUserRole }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -29,10 +29,11 @@ function Login() {
     return newErrors;
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     const newErrors = validateForm();
     
+    // Báo lỗi form bằng Toast thay vì Alert
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       toast.warning("⚠ Vui lòng kiểm tra lại thông tin", 3000);
@@ -40,11 +41,46 @@ function Login() {
     }
     
     setErrors({});
-    toast.success("✓ Đăng nhập thành công! Chào mừng quay lại!", 2000);
-    
-    setTimeout(() => {
-      navigate("/");
-    }, 500);
+
+    try {
+      // Gọi API thực tế tới Backend
+      const response = await fetch('http://localhost:3001/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success("✓ Đăng nhập thành công! Chào mừng quay lại!", 2000);
+        
+        // Lưu token và thông tin user vào localStorage
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        // Cập nhật state role cho App.js
+        if (setUserRole) {
+          setUserRole(data.user.role_code);
+        }
+
+        // Chờ Toast chạy nửa giây rồi mới chuyển hướng
+        setTimeout(() => {
+          if (data.user.role_code === 'ADMIN' || data.user.role_code === 'STAFF') {
+            navigate("/admin");
+          } else {
+            navigate("/");
+          }
+        }, 500);
+
+      } else {
+        toast.error("Đăng nhập thất bại: " + data.message, 3000);
+      }
+    } catch (error) {
+      toast.error("Không thể kết nối tới Server Backend!", 3000);
+    }
   };
 
   return (
