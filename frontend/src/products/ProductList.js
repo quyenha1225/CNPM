@@ -26,6 +26,7 @@ function ProductList({ category, setCategory, brand, setBrand }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [priceRange, setPriceRange] = useState("");
+  const [sortBy, setSortBy] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const productsTopRef = useRef(null);
   const productsPerPage = 12;
@@ -78,33 +79,72 @@ function ProductList({ category, setCategory, brand, setBrand }) {
 
   // Logic lọc sản phẩm tổng hợp (Lọc theo Category + Brand + Giá)
   const filteredProducts = useMemo(() => {
-    return products.filter((item) => {
-      // 1. Khớp danh mục
-      const matchCategory = category === "" || item.category === category;
+  let result = products.filter((item) => {
+    const matchCategory =
+      category === "" || item.category === category;
 
-      // 2. Khớp thương hiệu (Chuyển về chữ thường để loại bỏ hoàn toàn lỗi lệch chữ hoa/thường)
-      const matchBrand =
-        brand === "" ||
-        (item.brand &&
-          item.brand.trim().toLowerCase() === brand.trim().toLowerCase());
+    const matchBrand =
+      brand === "" ||
+      (item.brand &&
+        item.brand.trim().toLowerCase() ===
+          brand.trim().toLowerCase());
 
-      // 3. Khớp khoảng giá mới
-      let matchPrice = true;
-      if (priceRange === "duoi10") {
-        matchPrice = item.price < 10000000;
-      } else if (priceRange === "10den20") {
-        matchPrice = item.price >= 10000000 && item.price <= 20000000;
-      } else if (priceRange === "20den30") {
-        matchPrice = item.price >= 20000000 && item.price <= 30000000;
-      } else if (priceRange === "30den40") {
-        matchPrice = item.price >= 30000000 && item.price <= 40000000;
-      } else if (priceRange === "tren40") {
-        matchPrice = item.price > 40000000;
-      }
+    let matchPrice = true;
 
-      return matchCategory && matchBrand && matchPrice;
-    });
-  }, [products, category, brand, priceRange]);
+    if (priceRange === "duoi10") {
+      matchPrice = item.price < 10000000;
+    } else if (priceRange === "10den20") {
+      matchPrice =
+        item.price >= 10000000 &&
+        item.price <= 20000000;
+    } else if (priceRange === "20den30") {
+      matchPrice =
+        item.price >= 20000000 &&
+        item.price <= 30000000;
+    } else if (priceRange === "30den40") {
+      matchPrice =
+        item.price >= 30000000 &&
+        item.price <= 40000000;
+    } else if (priceRange === "tren40") {
+      matchPrice = item.price > 40000000;
+    }
+
+    return matchCategory && matchBrand && matchPrice;
+  });
+
+  switch (sortBy) {
+    case "rating":
+      result.sort(
+        (a, b) =>
+          (b.average_rating || 0) -
+          (a.average_rating || 0)
+      );
+      break;
+
+    case "reviews":
+      result.sort(
+        (a, b) =>
+          (b.review_count || 0) -
+          (a.review_count || 0)
+      );
+      break;
+
+    case "priceAsc":
+      result.sort((a, b) => a.price - b.price);
+      break;
+
+    case "priceDesc":
+      result.sort((a, b) => b.price - a.price);
+      break;
+
+    default:
+      break;
+  }
+
+  return result;
+}, 
+[products, category, brand, priceRange, sortBy]);
+
 
   // Tính số lượng sản phẩm cho từng danh mục ở menu bên trái
   const categoryCounts = useMemo(() => {
@@ -122,9 +162,9 @@ function ProductList({ category, setCategory, brand, setBrand }) {
   const indexOfFirstProduct = (currentPage - 1) * productsPerPage;
   const indexOfLastProduct = indexOfFirstProduct + productsPerPage;
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [category, brand, priceRange]);
+useEffect(() => {
+  setCurrentPage(1);
+}, [category, brand, priceRange, sortBy]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -159,11 +199,12 @@ function ProductList({ category, setCategory, brand, setBrand }) {
     });
   }
 
-  function resetFilters() {
-    setCategory("");
-    setBrand("");
-    setPriceRange("");
-  }
+ function resetFilters() {
+  setCategory("");
+  setBrand("");
+  setPriceRange("");
+  setSortBy("");
+}
 
   if (loading) {
     return (
@@ -259,6 +300,21 @@ function ProductList({ category, setCategory, brand, setBrand }) {
             ))}
           </select>
         </label>
+        <label>
+  <span>Sắp xếp</span>
+
+  <select
+    className="form-select"
+    value={sortBy}
+    onChange={(e) => setSortBy(e.target.value)}
+  >
+    <option value="">Mặc định</option>
+    <option value="rating">Đánh giá cao nhất</option>
+    <option value="reviews">Nhiều đánh giá nhất</option>
+    <option value="priceAsc">Giá tăng dần</option>
+    <option value="priceDesc">Giá giảm dần</option>
+  </select>
+</label>
       </div>
 
       <div className="row g-4 product-content-row">

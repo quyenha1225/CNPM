@@ -2703,23 +2703,64 @@ main {
   animation: contactPulse 1.6s ease-out infinite;
 }
 
-.contact-mini-stats,
+/* Container bao bọc 3 khối thống kê */
 .about-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap; /* Tự động rớt xuống hàng khi màn hình nhỏ (Mobile/Tablet) */
+  justify-content: center; /* Căn giữa toàn bộ các khối */
+  align-items: stretch; /* Giúp các khối có chiều cao bằng nhau nếu nội dung dài ngắn khác biệt */
+  gap: 24px; /* Khoảng cách đều giữa các khối */
+  width: 100%;
 }
 
-.contact-mini-stats span,
-.about-stat-grid div {
-  padding: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.76);
+/* Container bao bọc 3 khối thống kê */
+.about-stat-grid {
+  display: flex;
+  flex-wrap: wrap; /* Tự động rớt xuống hàng khi màn hình nhỏ (Mobile/Tablet) */
+  justify-content: center; /* Căn giữa toàn bộ các khối */
+  align-items: stretch; /* Giúp các khối có chiều cao bằng nhau nếu nội dung dài ngắn khác biệt */
+  gap: 24px; /* Khoảng cách đều giữa các khối */
+  width: 100%;
 }
 
+/* Định dạng trực tiếp cho 3 khối thẻ con bên trong container */
+.about-stat-grid > div {
+  display: flex;
+  flex-direction: column; 
+  align-items: center; /* Căn giữa nội dung chữ bên trong thẻ */
+  justify-content: center;
+  
+  /* Cấu hình Flex để chia cột:
+     - 1 1 30%: Trên màn hình lớn, mỗi khối chiếm khoảng 1/3 diện tích.
+  */
+  flex: 1 1 30%; 
+  
+  /* Chìa khóa cho Responsive: Khi màn hình nhỏ hơn 280px, nó sẽ ép rớt xuống thành 1 cột dọc như trong ảnh của anh */
+  min-width: 280px; 
+  
+  /* Phần trang trí giao diện thẻ (nền trắng, bo góc, đổ bóng) */
+  background-color: #ffffff;
+  padding: 30px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
+  text-align: center;
+}
+
+/* Định dạng cho chữ số (500+, 3, 24/7) */
+.about-stat-grid h3 {
+  color: #00897B; /* Mã màu xanh của anh */
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 0 0 10px 0;
+}
+
+/* Định dạng cho mô tả (Sản phẩm công nghệ...) */
+.about-stat-grid p {
+  color: #546E7A;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
 .contact-mini-stats b,
 .about-stat-grid strong {
   display: block;

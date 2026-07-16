@@ -10,68 +10,184 @@ function formatPrice(price) {
 
 function Product({ data }) {
   const { addToCart } = useCart();
-  const { id, name, price, image_url, percent_off } = data;
+
+  const {
+    id,
+    name,
+    price,
+    image_url,
+    percent_off,
+    brand,
+    category,
+    average_rating,
+    review_count,
+    stock_quantity,
+  } = data;
+
   const image = image_url || fallbackImage;
-  const finalPrice = percent_off
-    ? price - (percent_off * price) / 100
-    : price;
+
+  const finalPrice =
+    percent_off > 0
+      ? price - (percent_off * price) / 100
+      : price;
+
+  const inStock = stock_quantity > 0;
 
   const handleAddToCart = () => {
+    if (!inStock) {
+      toast.error("Sản phẩm đã hết hàng");
+      return;
+    }
+
     addToCart({
       id,
       name,
       price: finalPrice,
       originalPrice: price,
-      brand: data.brand,
-      category: data.category,
+      brand,
+      category,
       image,
       quantity: 1,
+      stock: stock_quantity,
     });
-    toast.success("✓ Sản phẩm đã được thêm vào giỏ hàng!", 3000);
+
+    toast.success("✓ Đã thêm vào giỏ hàng", 3000);
   };
 
   return (
     <div className="col">
       <div className="card shadow-sm h-100">
+
         <Link to={`/products/${id}`}>
+
           {percent_off > 0 && (
             <div
-              className="badge bg-dim py-2 text-white position-absolute"
-              style={{ top: "0.5rem", right: "0.5rem" }}
+              className="badge bg-danger position-absolute"
+              style={{
+                top: 10,
+                right: 10,
+                zIndex: 10,
+              }}
             >
-              {percent_off}% OFF
+              -{percent_off}%
             </div>
           )}
+
+          {!inStock && (
+            <div
+              className="badge bg-secondary position-absolute"
+              style={{
+                top: 45,
+                right: 10,
+                zIndex: 10,
+              }}
+            >
+              Hết hàng
+            </div>
+          )}
+
           <img
-            className="card-img-top bg-dark cover"
-            height="200"
-            alt={name}
             src={image}
+            alt={name}
+            className="card-img-top bg-white"
+            height="220"
+            style={{
+              objectFit: "contain",
+            }}
           />
+
         </Link>
 
-        <div className="card-body d-flex flex-column justify-content-between">
-          <h5 className="card-title text-center text-dark" title={name}>
+        <div className="card-body d-flex flex-column">
+
+          <h5
+            className="card-title"
+            title={name}
+          >
             {name}
           </h5>
-          <p className="card-text text-center text-muted mb-0">
+
+          <small className="text-muted">
+
+            {brand}
+
+          </small>
+
+          <small className="text-muted mb-2">
+
+            {category}
+
+          </small>
+
+          <div className="mb-2">
+
+            ⭐ {average_rating ?? 0}
+
+            <small className="text-muted">
+
+              {" "}
+              ({review_count ?? 0} đánh giá)
+
+            </small>
+
+          </div>
+
+          <div className="mb-2">
+
             {percent_off > 0 && (
-              <>
-                <del>{formatPrice(price)}</del>{" "}
-              </>
+              <div>
+
+                <del className="text-muted">
+
+                  {formatPrice(price)}
+
+                </del>
+
+              </div>
             )}
-            <span className="fw-bold text-danger">{formatPrice(finalPrice)}</span>
-          </p>
-          <div className="d-grid d-block">
+
+            <div className="text-danger fw-bold fs-5">
+
+              {formatPrice(finalPrice)}
+
+            </div>
+
+          </div>
+
+          <div className="mb-3">
+
+            {inStock ? (
+              <span className="text-success">
+
+                Còn {stock_quantity} sản phẩm
+
+              </span>
+            ) : (
+              <span className="text-danger">
+
+                Hết hàng
+
+              </span>
+            )}
+
+          </div>
+
+          <div className="mt-auto">
+
             <button
-              type="button"
-              className="btn btn-outline-dark mt-3"
+              className="btn btn-dark w-100"
+              disabled={!inStock}
               onClick={handleAddToCart}
             >
-              <FontAwesomeIcon icon={["fas", "cart-plus"]} /> Thêm vào giỏ
+              <FontAwesomeIcon icon={["fas", "cart-plus"]} />
+
+              {" "}Thêm vào giỏ
             </button>
+
           </div>
+
         </div>
+
       </div>
     </div>
   );

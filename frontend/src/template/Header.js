@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useRef, useState } from "react";
+
 import { useCart } from "../context/CartContext";
 import logo from "../quyen-pc-logo.png";
 
@@ -92,11 +93,10 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
               <span>Liên hệ</span>
             </Link>
 
-            <Link to="/cart" className="eshop-action-item">
-              <FontAwesomeIcon icon={["fas", "shopping-cart"]} />
-              <span>Giỏ hàng</span>
-              <b>{cartCount}</b>
-            </Link>
+            <Link to="/cart">
+    <FontAwesomeIcon icon={["fas","shopping-cart"]}/>
+    Giỏ hàng ({getTotalItems()})
+</Link>
 
             <Link to="/login" className="eshop-user-btn">
               <FontAwesomeIcon icon={["fas", "user-alt"]} />

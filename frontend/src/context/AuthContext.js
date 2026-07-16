@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('/api/login', {
+      const response = await fetch('/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch('/api/register', {
+      const response = await fetch('/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

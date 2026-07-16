@@ -1,0 +1,245 @@
+.product-detail-wrapper{
+    margin-top:40px;
+    margin-bottom:70px;
+}
+
+.product-detail-card{
+    background:#fff;
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 10px 35px rgba(0,0,0,.08);
+    padding:35px;
+}
+
+.product-detail-gallery{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.product-detail-gallery img{
+    width:100%;
+    max-width:430px;
+    object-fit:contain;
+    transition:.35s;
+}
+
+.product-detail-gallery img:hover{
+    transform:scale(1.05);
+}
+
+.product-detail-info{
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+}
+
+.detail-title{
+    font-size:2rem;
+    font-weight:700;
+    color:#222;
+    line-height:1.35;
+}
+
+.detail-meta{
+    display:flex;
+    flex-wrap:wrap;
+    gap:15px;
+    color:#666;
+    font-size:15px;
+}
+
+.detail-meta strong{
+    margin-left:6px;
+    color:#111;
+}
+
+.detail-rating{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    font-size:15px;
+}
+
+.stars{
+    color:#ffc107;
+    font-size:20px;
+}
+
+.detail-price-box{
+    background:#fafafa;
+    border-radius:12px;
+    padding:18px;
+}
+
+.current-price{
+    font-size:34px;
+    color:#dc3545;
+    font-weight:700;
+}
+
+.old-price{
+    margin-top:8px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.old-price del{
+    color:#888;
+}
+
+.discount-badge{
+    background:#dc3545;
+    color:white;
+    padding:4px 10px;
+    border-radius:20px;
+    font-size:13px;
+}
+
+/* ============ QUICK SPECS (hang icon noi bat) ============ */
+
+.quick-specs{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
+    gap:10px;
+}
+
+.quick-spec-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:#fafafa;
+    border:1px solid #eee;
+    border-radius:12px;
+    padding:10px 12px;
+}
+
+.quick-spec-icon{
+    font-size:22px;
+    line-height:1;
+}
+
+.quick-spec-label{
+    font-size:12px;
+    color:#888;
+}
+
+.quick-spec-value{
+    font-size:14px;
+    font-weight:600;
+    color:#222;
+}
+
+/* ============ VARIANT SELECTOR (chon cau hinh) ============ */
+
+.variant-selector{
+    background:#fafafa;
+    border-radius:12px;
+    padding:16px 18px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+}
+
+.variant-group-label{
+    font-size:14px;
+    font-weight:600;
+    color:#333;
+    margin-bottom:8px;
+}
+
+.variant-options{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+}
+
+.variant-option-btn{
+    background:#fff;
+    border:1.5px solid #ddd;
+    border-radius:8px;
+    padding:8px 16px;
+    font-size:14px;
+    color:#333;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.variant-option-btn:hover:not(.disabled){
+    border-color:#222;
+}
+
+.variant-option-btn.active{
+    background:#222;
+    border-color:#222;
+    color:#fff;
+    font-weight:600;
+}
+
+.variant-option-btn.disabled{
+    color:#bbb;
+    border-color:#eee;
+    text-decoration:line-through;
+    cursor:not-allowed;
+}
+
+.variant-unavailable{
+    margin:0;
+    color:#dc3545;
+    font-size:13px;
+}
+
+/* ============ SPEC SECTION (bang thong so ky thuat) ============ */
+
+.spec-section{
+    background:#fff;
+    border-radius:18px;
+    box-shadow:0 10px 35px rgba(0,0,0,.08);
+    padding:35px;
+    margin-top:30px;
+}
+
+.spec-section h3{
+    font-size:1.4rem;
+    font-weight:700;
+    color:#222;
+    margin-bottom:20px;
+}
+
+.spec-table{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));
+    gap:24px;
+}
+
+.spec-group-title{
+    font-size:15px;
+    font-weight:700;
+    color:#dc3545;
+    margin-bottom:8px;
+    padding-bottom:8px;
+    border-bottom:2px solid #f1f1f1;
+}
+
+.spec-group-table{
+    margin-bottom:0;
+}
+
+.spec-group-table tr:nth-child(odd){
+    background:#fafafa;
+}
+
+.spec-name{
+    width:42%;
+    color:#777;
+    font-size:14px;
+    padding:8px 10px !important;
+}
+
+.spec-value{
+    color:#222;
+    font-size:14px;
+    font-weight:600;
+    padding:8px 10px !important;
+}

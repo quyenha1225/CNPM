@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ProductsModule } from './products/products.module';
+import { CartModule } from './cart/cart.module';
 import { CategoriesController } from './categories/categories.controller';
 import { AiController } from './ai/ai.controller';
 
@@ -31,6 +32,7 @@ import { AiController } from './ai/ai.controller';
     UsersModule,
     AuthModule,
     ProductsModule,
+    CartModule,
   ],
   controllers: [AppController, CategoriesController, AiController],
   providers: [AppService],

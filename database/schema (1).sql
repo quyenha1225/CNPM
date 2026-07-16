@@ -1,3 +1,9 @@
+-- =========================================================
+-- Xoa database cu (neu co) de dam bao chay lai file nay luon sach,
+-- tranh cac loi "already exists" / "Duplicate column" khi chay lai.
+-- CAN THAN: dong nay se XOA TOAN BO du lieu cu trong electroshop_db.
+-- =========================================================
+DROP DATABASE IF EXISTS electroshop_db;
 
 CREATE DATABASE IF NOT EXISTS electroshop_db
 CHARACTER SET utf8mb4
@@ -5,7 +11,7 @@ COLLATE utf8mb4_unicode_ci;
 
 USE electroshop_db;
 
-SET FOREIGN_KEY_CHECKS = 1;
+SET FOREIGN_KEY_CHECKS = 0;
 
 -- =========================================================
 -- 1. ROLE & PERMISSION
@@ -151,6 +157,13 @@ CREATE TABLE IF NOT EXISTS products (
     CHECK (warranty_months >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+ALTER TABLE products
+ADD COLUMN sku VARCHAR(100) UNIQUE AFTER product_slug,
+ADD COLUMN barcode VARCHAR(100) NULL AFTER sku,
+ADD COLUMN manufacturer_part_number VARCHAR(100) NULL AFTER barcode,
+ADD COLUMN release_year YEAR NULL AFTER manufacturer_part_number,
+ADD COLUMN origin_country VARCHAR(100) NULL AFTER release_year;
+
 CREATE TABLE IF NOT EXISTS product_images (
     image_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     product_id BIGINT UNSIGNED NOT NULL,
@@ -168,6 +181,16 @@ CREATE TABLE IF NOT EXISTS product_attributes (
     attribute_name VARCHAR(100) NOT NULL UNIQUE,
     attribute_unit VARCHAR(50)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- spec_group: gom nhom thong so khi hien thi (vd "Bo xu ly & Bo nho",
+--   "Man hinh", "Ket noi", "Thiet ke & Trong luong"...)
+-- display_order: thu tu hien thi trong tung nhom (so nho hien truoc)
+-- is_highlight: TRUE = thong so duoc dua len hang icon noi bat dau
+--   trang chi tiet san pham (vd CPU, RAM, O cung, Man hinh)
+ALTER TABLE product_attributes
+ADD COLUMN spec_group VARCHAR(100) NULL AFTER attribute_name,
+ADD COLUMN display_order INT NOT NULL DEFAULT 0 AFTER attribute_unit,
+ADD COLUMN is_highlight BOOLEAN NOT NULL DEFAULT FALSE AFTER display_order;
 
 CREATE TABLE IF NOT EXISTS category_attributes (
     category_id BIGINT UNSIGNED NOT NULL,
@@ -196,6 +219,26 @@ CREATE TABLE IF NOT EXISTS product_attribute_values (
     CONSTRAINT fk_product_attribute_values_attribute
         FOREIGN KEY (attribute_id) REFERENCES product_attributes(attribute_id)
         ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS product_variants (
+    variant_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    product_id BIGINT UNSIGNED NOT NULL,
+    variant_name VARCHAR(200),
+    sku VARCHAR(100) UNIQUE,
+    color VARCHAR(100),
+    ram_size VARCHAR(50),
+    storage_size VARCHAR(50),
+    gpu_option VARCHAR(100),
+    cpu_option VARCHAR(100),
+    additional_price DECIMAL(15,2) DEFAULT 0,
+    variant_status VARCHAR(30) DEFAULT 'ACTIVE',
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_product_variants_product
+        FOREIGN KEY (product_id) REFERENCES products(product_id)
+        ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS product_logs (
@@ -254,9 +297,11 @@ CREATE TABLE IF NOT EXISTS inventory_transaction_types (
     inventory_type_name VARCHAR(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- da them variant_id (nullable) de dong bo voi variant_inventory ben duoi
 CREATE TABLE IF NOT EXISTS inventory_transactions (
     inventory_transaction_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     product_id BIGINT UNSIGNED NOT NULL,
+    variant_id BIGINT UNSIGNED NULL,
     supplier_id BIGINT UNSIGNED NULL,
     staff_user_id BIGINT UNSIGNED NULL,
     inventory_type_id BIGINT UNSIGNED NOT NULL,
@@ -268,6 +313,10 @@ CREATE TABLE IF NOT EXISTS inventory_transactions (
     CONSTRAINT fk_inventory_transactions_product
         FOREIGN KEY (product_id) REFERENCES products(product_id)
         ON UPDATE CASCADE ON DELETE RESTRICT,
+
+    CONSTRAINT fk_inventory_transactions_variant
+        FOREIGN KEY (variant_id) REFERENCES product_variants(variant_id)
+        ON UPDATE CASCADE ON DELETE SET NULL,
 
     CONSTRAINT fk_inventory_transactions_supplier
         FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
@@ -285,6 +334,37 @@ CREATE TABLE IF NOT EXISTS inventory_transactions (
     CHECK (unit_cost IS NULL OR unit_cost >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS variant_inventory (
+    variant_id BIGINT UNSIGNED PRIMARY KEY,
+    stock_quantity INT DEFAULT 0,
+    reserved_quantity INT DEFAULT 0,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_variant_inventory_variant
+        FOREIGN KEY (variant_id) REFERENCES product_variants(variant_id)
+        ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS product_tags (
+    tag_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    tag_name VARCHAR(100) UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS product_tag_mapping (
+    product_id BIGINT UNSIGNED NOT NULL,
+    tag_id BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (product_id, tag_id),
+
+    CONSTRAINT fk_product_tag_mapping_product
+        FOREIGN KEY (product_id) REFERENCES products(product_id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    CONSTRAINT fk_product_tag_mapping_tag
+        FOREIGN KEY (tag_id) REFERENCES product_tags(tag_id)
+        ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- =========================================================
 -- 5. CART
 -- =========================================================
@@ -299,12 +379,22 @@ CREATE TABLE IF NOT EXISTS carts (
         ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- variant_key la generated column thay the IFNULL(variant_id, 0) truc tiep
+-- trong PRIMARY KEY (MySQL khong cho phep functional key part trong PK).
+-- LUU Y QUAN TRONG: vi variant_id la cot goc cua generated column
+-- (variant_key), InnoDB KHONG CHO PHEP FK tren variant_id dung
+-- CASCADE / SET NULL (loi 1215 "Cannot add foreign key constraint").
+-- Vi vay FK nay phai dung RESTRICT: muon xoa/doi variant_id dang duoc
+-- tham chieu trong cart_items thi phai xu ly o tang ung dung truoc
+-- (xoa/cap nhat cart_items lien quan), MySQL se khong tu CASCADE.
 CREATE TABLE IF NOT EXISTS cart_items (
     cart_id BIGINT UNSIGNED NOT NULL,
     product_id BIGINT UNSIGNED NOT NULL,
+    variant_id BIGINT UNSIGNED NULL,
+    variant_key BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(variant_id, 0)) STORED,
     cart_quantity INT NOT NULL,
     added_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (cart_id, product_id),
+    PRIMARY KEY (cart_id, product_id, variant_key),
 
     CONSTRAINT fk_cart_items_cart
         FOREIGN KEY (cart_id) REFERENCES carts(cart_id)
@@ -313,6 +403,10 @@ CREATE TABLE IF NOT EXISTS cart_items (
     CONSTRAINT fk_cart_items_product
         FOREIGN KEY (product_id) REFERENCES products(product_id)
         ON UPDATE CASCADE ON DELETE RESTRICT,
+
+    CONSTRAINT fk_cart_items_variant
+        FOREIGN KEY (variant_id) REFERENCES product_variants(variant_id)
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
 
     CHECK (cart_quantity > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -359,12 +453,18 @@ CREATE TABLE IF NOT EXISTS order_shipping_addresses (
         ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- variant_key la generated column thay the IFNULL(variant_id, 0) truc tiep
+-- trong PRIMARY KEY. LUU Y: cung nhu cart_items, FK tren variant_id
+-- KHONG duoc dung SET NULL / CASCADE vi variant_id la cot goc cua
+-- generated column variant_key -> phai dung RESTRICT.
 CREATE TABLE IF NOT EXISTS order_items (
     order_id BIGINT UNSIGNED NOT NULL,
     product_id BIGINT UNSIGNED NOT NULL,
+    variant_id BIGINT UNSIGNED NULL,
+    variant_key BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(variant_id, 0)) STORED,
     ordered_quantity INT NOT NULL,
     unit_price_at_order DECIMAL(15,2) NOT NULL,
-    PRIMARY KEY (order_id, product_id),
+    PRIMARY KEY (order_id, product_id, variant_key),
 
     CONSTRAINT fk_order_items_order
         FOREIGN KEY (order_id) REFERENCES orders(order_id)
@@ -373,6 +473,10 @@ CREATE TABLE IF NOT EXISTS order_items (
     CONSTRAINT fk_order_items_product
         FOREIGN KEY (product_id) REFERENCES products(product_id)
         ON UPDATE CASCADE ON DELETE RESTRICT,
+
+    CONSTRAINT fk_order_items_variant
+        FOREIGN KEY (variant_id) REFERENCES product_variants(variant_id)
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
 
     CHECK (ordered_quantity > 0),
     CHECK (unit_price_at_order >= 0)
@@ -448,7 +552,72 @@ CREATE TABLE IF NOT EXISTS payments (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================================================
--- 8. AI SEARCH
+-- 8. PRODUCT REVIEW
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS product_reviews (
+    review_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    product_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    order_id BIGINT UNSIGNED NULL,
+    rating TINYINT UNSIGNED NOT NULL,
+    review_title VARCHAR(255),
+    review_content TEXT,
+    is_verified_purchase BOOLEAN DEFAULT FALSE,
+    review_status VARCHAR(30) DEFAULT 'PENDING',
+    helpful_count INT DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_product_reviews_product
+        FOREIGN KEY (product_id) REFERENCES products(product_id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    CONSTRAINT fk_product_reviews_user
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    CONSTRAINT fk_product_reviews_order
+        FOREIGN KEY (order_id) REFERENCES orders(order_id)
+        ON UPDATE CASCADE ON DELETE SET NULL,
+
+    CHECK (rating BETWEEN 1 AND 5)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS product_review_images (
+    review_image_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    review_id BIGINT UNSIGNED NOT NULL,
+    image_url VARCHAR(500) NOT NULL,
+    sort_order INT DEFAULT 0,
+
+    CONSTRAINT fk_product_review_images_review
+        FOREIGN KEY (review_id) REFERENCES product_reviews(review_id)
+        ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS product_review_replies (
+    reply_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    review_id BIGINT UNSIGNED NOT NULL,
+    staff_user_id BIGINT UNSIGNED NOT NULL,
+    reply_content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_review_reply_review
+        FOREIGN KEY (review_id) REFERENCES product_reviews(review_id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    CONSTRAINT fk_review_reply_staff
+        FOREIGN KEY (staff_user_id) REFERENCES users(user_id)
+        ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE products
+ADD COLUMN average_rating DECIMAL(2,1) DEFAULT 0.0 AFTER base_price,
+ADD COLUMN review_count INT DEFAULT 0 AFTER average_rating;
+
+-- =========================================================
+-- 9. AI SEARCH
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS ai_search_logs (
@@ -493,7 +662,7 @@ CREATE TABLE IF NOT EXISTS ai_search_results (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================================================
--- 9. AUDIT LOG
+-- 10. AUDIT LOG
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -510,9 +679,10 @@ CREATE TABLE IF NOT EXISTS audit_logs (
         ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =========================================================
+SET FOREIGN_KEY_CHECKS = 1;
 
--- 11. VIEW TÍNH TOÁN
+-- =========================================================
+-- 11. VIEW TINH TOAN
 -- =========================================================
 
 DROP VIEW IF EXISTS vw_best_selling_products;
@@ -595,4 +765,92 @@ LEFT JOIN order_statuses os
     ON o.order_status_id = os.order_status_id
 GROUP BY p.product_id, p.product_name;
 
+-- =========================================================
+-- BANG CON THIEU: user_view_history
+-- (ProductsService.getRecommendedProducts / logView dang dung bang nay
+--  nhung no khong co trong schema.sql goc)
+-- =========================================================
 
+CREATE TABLE IF NOT EXISTS user_view_history (
+    view_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    product_id BIGINT UNSIGNED NOT NULL,
+    viewed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_user_view_history_user
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    CONSTRAINT fk_user_view_history_product
+        FOREIGN KEY (product_id) REFERENCES products(product_id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    INDEX idx_user_view_history_product (product_id),
+    INDEX idx_user_view_history_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================
+-- TRIGGER: tu dong cap nhat products.average_rating / review_count
+-- Chi tinh cac review co review_status = 'APPROVED'.
+-- Vi review moi tao mac dinh la PENDING (theo schema), rating se
+-- CHUA doi ngay khi user gui danh gia - chi doi khi admin duyet
+-- (UPDATE product_reviews SET review_status = 'APPROVED' ...).
+-- Neu do an ban muon hien ngay khong can duyet, bo dieu kien
+-- review_status = 'APPROVED' trong ca 3 trigger ben duoi.
+-- =========================================================
+
+DROP TRIGGER IF EXISTS trg_review_after_insert;
+DROP TRIGGER IF EXISTS trg_review_after_update;
+DROP TRIGGER IF EXISTS trg_review_after_delete;
+
+DELIMITER $$
+
+CREATE TRIGGER trg_review_after_insert
+AFTER INSERT ON product_reviews
+FOR EACH ROW
+BEGIN
+  UPDATE products p
+  SET p.review_count = (
+        SELECT COUNT(*) FROM product_reviews r
+        WHERE r.product_id = NEW.product_id AND r.review_status = 'APPROVED'
+      ),
+      p.average_rating = (
+        SELECT COALESCE(AVG(r.rating), 0) FROM product_reviews r
+        WHERE r.product_id = NEW.product_id AND r.review_status = 'APPROVED'
+      )
+  WHERE p.product_id = NEW.product_id;
+END$$
+
+CREATE TRIGGER trg_review_after_update
+AFTER UPDATE ON product_reviews
+FOR EACH ROW
+BEGIN
+  UPDATE products p
+  SET p.review_count = (
+        SELECT COUNT(*) FROM product_reviews r
+        WHERE r.product_id = NEW.product_id AND r.review_status = 'APPROVED'
+      ),
+      p.average_rating = (
+        SELECT COALESCE(AVG(r.rating), 0) FROM product_reviews r
+        WHERE r.product_id = NEW.product_id AND r.review_status = 'APPROVED'
+      )
+  WHERE p.product_id = NEW.product_id;
+END$$
+
+CREATE TRIGGER trg_review_after_delete
+AFTER DELETE ON product_reviews
+FOR EACH ROW
+BEGIN
+  UPDATE products p
+  SET p.review_count = (
+        SELECT COUNT(*) FROM product_reviews r
+        WHERE r.product_id = OLD.product_id AND r.review_status = 'APPROVED'
+      ),
+      p.average_rating = (
+        SELECT COALESCE(AVG(r.rating), 0) FROM product_reviews r
+        WHERE r.product_id = OLD.product_id AND r.review_status = 'APPROVED'
+      )
+  WHERE p.product_id = OLD.product_id;
+END$$
+
+DELIMITER ;
