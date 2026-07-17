@@ -1,40 +1,24 @@
 import React from 'react';
-import { Outlet, useNavigate, Link } from 'react-router-dom'; // Import thêm Link
+import { Outlet } from 'react-router-dom'; 
+import Header from '../template/Header';
 
 export default function CustomerLayout() {
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    localStorage.clear();
-    // Đổi thành '/login' nếu App.js của bạn cấu hình trang đăng nhập là /login
-    navigate('/login'); 
-  };
-
   return (
-    <div>
-      <header>
-        <h1>ElectroShop</h1>
-        <nav>
-          <ul>
-            {/* Sử dụng Link thay cho thẻ a */}
-            <li><Link to="/">Trang chủ</Link></li>
-            <li><Link to="/cart">Giỏ hàng</Link></li>
-            <li><Link to="/contact">Liên hệ</Link></li>
-          </ul>
-        </nav>
-        <button type="button" onClick={handleLogout}>Đăng xuất</button>
-      </header>
-      
-      <hr />
+    <div className="customer-layout-wrapper">
+      {/* Gọi Component Header đã được lập trình giao diện */}
+      <Header />
       
       <main>
-        <Outlet />
+        {/* Nơi render các trang con (Trang chủ, Giỏ hàng, Liên hệ...) */}
+        <Outlet /> 
       </main>
       
       <hr />
       
       <footer>
-        <p>Bản quyền thuộc về hệ thống ElectroShop</p>
+        <p style={{ textAlign: 'center', padding: '20px 0' }}>
+          Bản quyền thuộc về hệ thống ElectroShop
+        </p>
       </footer>
     </div>
   );

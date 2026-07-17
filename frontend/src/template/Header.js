@@ -1,10 +1,9 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom"; // Thêm useLocation
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "../context/CartContext";
 import logo from "../quyen-pc-logo.png";
 
-// Map chuẩn khớp 100% với category_slug trong MySQL và menuCategories ở ProductList
 const categoryMap = {
   laptop: "laptop",
   "dien-thoai": "dien-thoai",
@@ -19,6 +18,29 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const categoryDropdownRef = useRef(null);
+  
+  // --- THÊM LOGIC LẮNG NGHE SỰ THAY ĐỔI CỦA TRANG (URL) ---
+  const navigate = useNavigate();
+  const location = useLocation(); 
+  const [user, setUser] = useState(null); 
+
+  useEffect(() => {
+    // Mỗi khi URL thay đổi (VD: từ /login sang /), nó sẽ lấy lại data mới nhất
+    const storedUser = localStorage.getItem('user');
+    if (storedUser && storedUser !== "undefined") {
+      setUser(JSON.parse(storedUser));
+    } else {
+      setUser(null);
+    }
+  }, [location]); 
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    setUser(null); // Xóa state user để giao diện cập nhật ngay lập tức
+    navigate('/login');
+  };
+  // ---------------------------------------------------------
 
   useEffect(() => {
     function closeCategoryMenu(event) {
@@ -61,7 +83,6 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
     closeMenus();
   }
 
-  // Cập nhật trực tiếp slug gốc dạng chữ thường gạch ngang
   function applyCategory(category) {
     setCategory(category);
     setBrand("");
@@ -98,18 +119,30 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
               <b>{cartCount}</b>
             </Link>
 
-            <Link to="/login" className="eshop-user-btn">
-              <FontAwesomeIcon icon={["fas", "user-alt"]} />
-              <span>Tài khoản</span>
-            </Link>
+            {/* --- XỬ LÝ NÚT TÀI KHOẢN TRÊN DESKTOP --- */}
+            {user ? (
+              <div className="eshop-action-item dropdown-user" style={{ cursor: 'pointer', display: 'flex', gap: '15px' }}>
+                <span style={{ color: '#fff' }}>
+                  <FontAwesomeIcon icon={["fas", "user-check"]} style={{ marginRight: '5px' }}/>
+                  {user.user_full_name || user.email} {/* Đề phòng ko có full_name thì hiện email */}
+                </span>
+                <span onClick={handleLogout} style={{ color: '#ff4d4d', fontWeight: 'bold' }}>
+                  Đăng xuất
+                </span>
+              </div>
+            ) : (
+              <Link to="/login" className="eshop-user-btn">
+                <FontAwesomeIcon icon={["fas", "user-alt"]} />
+                <span>Tài khoản</span>
+              </Link>
+            )}
+            {/* ---------------------------------------- */}
           </div>
 
           <button
             type="button"
             className="eshop-mobile-menu-btn"
-            aria-label={
-              isNavOpen ? "Đóng menu điều hướng" : "Mở menu điều hướng"
-            }
+            aria-label={isNavOpen ? "Đóng menu điều hướng" : "Mở menu điều hướng"}
             aria-controls="eshop-main-navigation"
             aria-expanded={isNavOpen}
             onClick={() => {
@@ -149,90 +182,39 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
             </button>
 
             <div className="eshop-category-menu">
-              <Link to="/products" onClick={resetProductFilters}>
-                Tất cả sản phẩm
-              </Link>
-              <Link
-                to="/category/dien-thoai"
-                onClick={() => applyCategory(categoryMap["dien-thoai"])}
-              >
-                Điện thoại
-              </Link>
-              <Link
-                to="/category/laptop"
-                onClick={() => applyCategory(categoryMap.laptop)}
-              >
-                Laptop
-              </Link>
-              <Link
-                to="/category/phu-kien"
-                onClick={() => applyCategory(categoryMap["phu-kien"])}
-              >
-                Phụ kiện
-              </Link>
-              <Link
-                to="/category/linh-kien-pc"
-                onClick={() => applyCategory(categoryMap["linh-kien-pc"])}
-              >
-                Linh kiện PC
-              </Link>
-              <Link
-                to="/category/man-hinh"
-                onClick={() => applyCategory(categoryMap["man-hinh"])}
-              >
-                Màn hình
-              </Link>
+              <Link to="/products" onClick={resetProductFilters}>Tất cả sản phẩm</Link>
+              <Link to="/category/dien-thoai" onClick={() => applyCategory(categoryMap["dien-thoai"])}>Điện thoại</Link>
+              <Link to="/category/laptop" onClick={() => applyCategory(categoryMap.laptop)}>Laptop</Link>
+              <Link to="/category/phu-kien" onClick={() => applyCategory(categoryMap["phu-kien"])}>Phụ kiện</Link>
+              <Link to="/category/linh-kien-pc" onClick={() => applyCategory(categoryMap["linh-kien-pc"])}>Linh kiện PC</Link>
+              <Link to="/category/man-hinh" onClick={() => applyCategory(categoryMap["man-hinh"])}>Màn hình</Link>
             </div>
           </div>
 
-          <Link to="/" onClick={closeMenus}>
-            Trang chủ
-          </Link>
-          <Link to="/products" onClick={resetProductFilters}>
-            Sản phẩm
-          </Link>
-          <Link
-            to="/category/laptop"
-            onClick={() => applyCategory(categoryMap.laptop)}
-          >
-            Laptop
-          </Link>
-          <Link
-            to="/category/dien-thoai"
-            onClick={() => applyCategory(categoryMap["dien-thoai"])}
-          >
-            Điện thoại
-          </Link>
-          <Link
-            to="/category/phu-kien"
-            onClick={() => applyCategory(categoryMap["phu-kien"])}
-          >
-            Phụ kiện
-          </Link>
-          <Link to="/about" onClick={closeMenus}>
-            Giới thiệu
-          </Link>
-          <Link
-            to="/contact"
-            className="eshop-nav-mobile-link"
-            onClick={closeMenus}
-          >
-            Liên hệ
-          </Link>
-          <Link
-            to="/cart"
-            className="eshop-nav-mobile-link"
-            onClick={closeMenus}
-          >
-            Giỏ hàng ({getTotalItems()})
-          </Link>
-          <Link
-            to="/login"
-            className="eshop-nav-mobile-link"
-            onClick={closeMenus}
-          >
-            Tài khoản
-          </Link>
+          <Link to="/" onClick={closeMenus}>Trang chủ</Link>
+          <Link to="/products" onClick={resetProductFilters}>Sản phẩm</Link>
+          <Link to="/category/laptop" onClick={() => applyCategory(categoryMap.laptop)}>Laptop</Link>
+          <Link to="/category/dien-thoai" onClick={() => applyCategory(categoryMap["dien-thoai"])}>Điện thoại</Link>
+          <Link to="/category/phu-kien" onClick={() => applyCategory(categoryMap["phu-kien"])}>Phụ kiện</Link>
+          <Link to="/about" onClick={closeMenus}>Giới thiệu</Link>
+          <Link to="/contact" className="eshop-nav-mobile-link" onClick={closeMenus}>Liên hệ</Link>
+          <Link to="/cart" className="eshop-nav-mobile-link" onClick={closeMenus}>Giỏ hàng ({getTotalItems()})</Link>
+
+          {/* --- XỬ LÝ NÚT TÀI KHOẢN TRÊN MOBILE MENU --- */}
+          {user ? (
+            <button 
+              className="eshop-nav-mobile-link" 
+              onClick={() => { closeMenus(); handleLogout(); }}
+              style={{ background: 'none', border: 'none', textAlign: 'left', color: 'red', fontWeight: 'bold', width: '100%', padding: '10px 15px' }}
+            >
+              Đăng xuất ({user.user_full_name || user.email})
+            </button>
+          ) : (
+            <Link to="/login" className="eshop-nav-mobile-link" onClick={closeMenus}>
+              Tài khoản
+            </Link>
+          )}
+          {/* ------------------------------------------- */}
         </div>
       </nav>
     </header>

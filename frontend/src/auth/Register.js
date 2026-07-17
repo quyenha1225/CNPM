@@ -1,6 +1,8 @@
 ﻿import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+// Import các icon cần thiết cho form
+import { faUser, faEnvelope, faPhone, faLock, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "../utils/Toast";
 import "./Auth.css";
 
@@ -20,6 +22,10 @@ function Register() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // Xóa lỗi của trường đó khi người dùng bắt đầu nhập lại
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const validateForm = () => {
@@ -74,11 +80,68 @@ function Register() {
           <h2>Tạo Tài Khoản</h2>
         </div>
         <form onSubmit={handleRegister} className="auth-form">
-          <input name="fullName" placeholder="Họ và Tên" value={formData.fullName} onChange={handleChange} className="form-control" />
-          <input name="email" type="email" placeholder="Email" value={formData.email} onChange={handleChange} className="form-control" />
-          <input name="phone" placeholder="Số điện thoại" value={formData.phone} onChange={handleChange} className="form-control" />
-          <input name="password" type="password" placeholder="Mật khẩu" value={formData.password} onChange={handleChange} className="form-control" />
-          <input name="confirmPassword" type="password" placeholder="Xác nhận mật khẩu" value={formData.confirmPassword} onChange={handleChange} className="form-control" />
+          
+          {/* Họ và Tên */}
+          <div className="form-group">
+            <div className={`input-group ${errors.fullName ? "input-error" : ""}`}>
+              <span className="input-icon">
+                <FontAwesomeIcon icon={faUser} />
+              </span>
+              <input name="fullName" placeholder="Họ và Tên" value={formData.fullName} onChange={handleChange} className="form-control" />
+            </div>
+            {errors.fullName && <span className="error-text">{errors.fullName}</span>}
+          </div>
+
+          {/* Email */}
+          <div className="form-group">
+            <div className={`input-group ${errors.email ? "input-error" : ""}`}>
+              <span className="input-icon">
+                <FontAwesomeIcon icon={faEnvelope} />
+              </span>
+              <input name="email" type="email" placeholder="Email" value={formData.email} onChange={handleChange} className="form-control" />
+            </div>
+            {errors.email && <span className="error-text">{errors.email}</span>}
+          </div>
+
+          {/* Số điện thoại */}
+          <div className="form-group">
+            <div className={`input-group ${errors.phone ? "input-error" : ""}`}>
+              <span className="input-icon">
+                <FontAwesomeIcon icon={faPhone} />
+              </span>
+              <input name="phone" placeholder="Số điện thoại" value={formData.phone} onChange={handleChange} className="form-control" />
+            </div>
+            {errors.phone && <span className="error-text">{errors.phone}</span>}
+          </div>
+
+          {/* Mật khẩu */}
+          <div className="form-group">
+            <div className={`input-group ${errors.password ? "input-error" : ""}`}>
+              <span className="input-icon">
+                <FontAwesomeIcon icon={faLock} />
+              </span>
+              <input name="password" type={showPassword ? "text" : "password"} placeholder="Mật khẩu" value={formData.password} onChange={handleChange} className="form-control" />
+              <span className="toggle-password" onClick={() => setShowPassword(!showPassword)}>
+                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+              </span>
+            </div>
+            {errors.password && <span className="error-text">{errors.password}</span>}
+          </div>
+
+          {/* Xác nhận mật khẩu */}
+          <div className="form-group">
+            <div className={`input-group ${errors.confirmPassword ? "input-error" : ""}`}>
+              <span className="input-icon">
+                <FontAwesomeIcon icon={faLock} />
+              </span>
+              <input name="confirmPassword" type={showConfirmPassword ? "text" : "password"} placeholder="Xác nhận mật khẩu" value={formData.confirmPassword} onChange={handleChange} className="form-control" />
+              <span className="toggle-password" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                <FontAwesomeIcon icon={showConfirmPassword ? faEyeSlash : faEye} />
+              </span>
+            </div>
+            {errors.confirmPassword && <span className="error-text">{errors.confirmPassword}</span>}
+          </div>
+
           <button type="submit" className="btn btn-primary w-100">Tạo Tài Khoản</button>
         </form>
       </div>
