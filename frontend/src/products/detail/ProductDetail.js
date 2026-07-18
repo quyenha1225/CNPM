@@ -12,12 +12,10 @@ function formatPrice(price) {
 
 function getDiscountedPrice(product) {
   if (!product.percent_off) return product.price;
-
   return product.price - (product.percent_off * product.price) / 100;
 }
 
-// Cac chieu cau hinh co the chon mua (khop voi cot trong product_variants).
-// Chi hien selector cho chieu nao co >= 2 gia tri khac nhau giua cac variant.
+// Cac chieu cau hinh co the chon mua
 const VARIANT_DIMENSIONS = [
   { key: "cpu_option", label: "CPU" },
   { key: "ram_size", label: "RAM" },
@@ -26,7 +24,6 @@ const VARIANT_DIMENSIONS = [
   { key: "color", label: "Màu sắc" },
 ];
 
-// Icon rieng cho 1 vai thong so hay gap, con lai dung icon mac dinh.
 const SPEC_ICON_MAP = {
   "cpu": "🧠",
   "ram": "💾",
@@ -58,53 +55,38 @@ function ProductDetail() {
 
   const [product, setProduct] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Cau hinh dang duoc chon: { ram_size, storage_size, cpu_option, gpu_option, color }
   const [selectedOptions, setSelectedOptions] = useState({});
 
   useEffect(() => {
     setLoading(true);
 
-    fetch("http://localhost:3001/api/products")
+    // Goi dung API lay chi tiet 1 san pham
+    fetch(`http://localhost:3001/api/products/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error("Không thể tải sản phẩm");
         return res.json();
       })
-      .then((products) => {
-        const found = products.find(
-          (item) => String(item.id) === id
-        );
-
-        if (!found)
-          throw new Error("Không tìm thấy sản phẩm");
-
-        setProduct(found);
+      .then((productData) => {
+        setProduct(productData);
         setLoading(false);
 
-        fetch(
-          "http://localhost:3001/api/products/log-view",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              userId: 1,
-              productId: Number(id),
-            }),
-          }
-        ).catch(() => {});
+        fetch("http://localhost:3001/api/products/log-view", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: 1,
+            productId: Number(id),
+          }),
+        }).catch(() => {});
 
-        fetch(
-          `http://localhost:3001/api/products/recommend/${id}`
-        )
+        fetch(`http://localhost:3001/api/products/recommend/${id}`)
           .then((res) => res.json())
-          .then((data) =>
-            setRecommendations(data)
-          )
+          .then((data) => setRecommendations(data))
           .catch(() => {});
       })
       .catch((err) => {
@@ -113,21 +95,14 @@ function ProductDetail() {
       });
   }, [id]);
 
-  // Khi san pham (hoac cac variant cua no) da tai xong, chon san
-  // cau hinh mac dinh (is_default = true, hoac variant dau tien).
   useEffect(() => {
     if (!product) return;
-
     const variants = product.variants || [];
-
     if (variants.length === 0) {
       setSelectedOptions({});
       return;
     }
-
-    const defaultVariant =
-      variants.find((v) => v.is_default) || variants[0];
-
+    const defaultVariant = variants.find((v) => v.is_default) || variants[0];
     setSelectedOptions({
       ram_size: defaultVariant.ram_size ?? null,
       storage_size: defaultVariant.storage_size ?? null,
@@ -141,10 +116,7 @@ function ProductDetail() {
     return (
       <div className="container text-center my-5 py-5">
         <div className="spinner-border text-dark"></div>
-
-        <p className="mt-3">
-          Đang tải sản phẩm...
-        </p>
+        <p className="mt-3">Đang tải sản phẩm...</p>
       </div>
     );
   }
@@ -152,31 +124,20 @@ function ProductDetail() {
   if (error || !product) {
     return (
       <div className="container text-center mt-5">
-
-        <h2 className="text-danger">
-          Không tìm thấy sản phẩm
-        </h2>
-
+        <h2 className="text-danger">Không tìm thấy sản phẩm</h2>
         <p>{error}</p>
-
-        <Link
-          to="/products"
-          className="btn btn-dark"
-        >
+        <Link to="/products" className="btn btn-dark">
           Quay lại
         </Link>
-
       </div>
     );
   }
 
   const image = product.image_url || fallbackImage;
-
   const specifications = product.specifications || [];
   const variants = product.variants || [];
   const hasVariants = variants.length > 0;
 
-  // Chi giu lai cac chieu cau hinh thuc su co nhieu hon 1 lua chon
   const activeDimensions = VARIANT_DIMENSIONS.filter((dim) => {
     const distinctValues = new Set(
       variants.map((v) => v[dim.key]).filter(Boolean)
@@ -184,12 +145,9 @@ function ProductDetail() {
     return distinctValues.size > 1;
   });
 
-  // 1 gia tri cua 1 chieu con "chon duoc" neu ton tai it nhat 1 variant
-  // khop voi gia tri do VA khop voi cac lua chon hien tai o cac chieu khac
   const isOptionAvailable = (dimKey, value) =>
     variants.some((v) => {
       if (v[dimKey] !== value) return false;
-
       return activeDimensions.every((dim) => {
         if (dim.key === dimKey) return true;
         const selected = selectedOptions[dim.key];
@@ -199,9 +157,7 @@ function ProductDetail() {
 
   const matchedVariant = hasVariants
     ? variants.find((v) =>
-        activeDimensions.every(
-          (dim) => v[dim.key] === selectedOptions[dim.key]
-        )
+        activeDimensions.every((dim) => v[dim.key] === selectedOptions[dim.key])
       ) || null
     : null;
 
@@ -214,9 +170,6 @@ function ProductDetail() {
   const variantExtra = matchedVariant?.additional_price
     ? Number(matchedVariant.additional_price)
     : 0;
-  // Luu y: % giam gia hien chi ap dung tren gia goc cua san pham,
-  // phan phu thu cua cau hinh (additional_price) duoc cong them sau,
-  // KHONG bi giam gia. Neu can giam ca phan phu thu, sua o day.
   const finalPrice = basePriceAfterDiscount + variantExtra;
 
   const stock = hasVariants
@@ -224,11 +177,8 @@ function ProductDetail() {
     : product.stock_quantity ?? 0;
 
   const rating = product.average_rating ?? 0;
-
   const reviewCount = product.review_count ?? 0;
 
-  // Thong so noi bat hien thi dang icon dau trang: uu tien is_highlight,
-  // neu khong co thong so nao duoc danh dau thi lay tam 4 thong so dau
   const highlightSpecs =
     specifications.filter((s) => s.is_highlight).length > 0
       ? specifications.filter((s) => s.is_highlight)
@@ -236,7 +186,6 @@ function ProductDetail() {
           .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
           .slice(0, 4);
 
-  // Gom thong so theo spec_group de hien bang day du gon gang hon
   const groupedSpecs = specifications.reduce((acc, spec) => {
     const groupName = spec.spec_group || "Thông số khác";
     if (!acc[groupName]) acc[groupName] = [];
@@ -259,12 +208,10 @@ function ProductDetail() {
       toast.error("Vui lòng chọn cấu hình còn hàng");
       return;
     }
-
     if (stock <= 0) {
       toast.error("Sản phẩm đã hết hàng");
       return;
     }
-
     addToCart({
       id: product.id,
       variantId: matchedVariant?.variant_id ?? null,
@@ -279,442 +226,177 @@ function ProductDetail() {
       stock,
       selectedOptions: hasVariants ? { ...selectedOptions } : undefined,
     });
-
     toast.success("Đã thêm vào giỏ hàng");
   };
+
   return (
     <>
       <ScrollToTopOnMount />
 
       <div className="container product-detail-page">
-
-        <Link
-          to="/products"
-          className="back-link"
-        >
+        <Link to="/products" className="product-detail-back">
           ← Quay lại danh sách
         </Link>
 
-        <div className="row product-detail-card">
-
-          <div className="col-lg-5 product-image-box">
-
-            <img
-              src={image}
-              alt={product.name}
-            />
-
+        {/* Khung bao bọc chính đã được sửa */}
+        <div className="product-detail-shell">
+          
+          {/* Cột hình ảnh đã được sửa */}
+          <div className="product-detail-media">
+            {product.percent_off > 0 && (
+              <div className="product-detail-sale">
+                -{product.percent_off}%
+              </div>
+            )}
+            <img src={image} alt={product.name} />
           </div>
 
-          <div className="col-lg-7 product-info">
+          {/* Cột thông tin đã được sửa */}
+          <div className="product-detail-info">
+            
+            <span className="product-detail-kicker">{product.brand || "ElectroShop"}</span>
+            
+            <h1>{product.name}</h1>
 
-            <h1 className="product-title">
-              {product.name}
-            </h1>
-
-            <div className="badge-area">
-
-              {product.percent_off > 0 && (
-
-                <span className="badge bg-danger">
-
-                  -{product.percent_off}%
-
-                </span>
-
-              )}
-
-              <span className="badge bg-secondary">
-
-                {product.category}
-
-              </span>
-
+            <div className="product-detail-tags">
+              <span>{product.category}</span>
+              <span>⭐ {rating}/5 ({reviewCount} đánh giá)</span>
               {stock > 0 ? (
-
-                <span className="badge bg-success">
-
-                  Còn hàng
-
-                </span>
-
+                <span>Kho còn: {stock}</span>
               ) : (
-
-                <span className="badge bg-danger">
-
-                  Hết hàng
-
-                </span>
-
+                <span style={{ color: '#dc3545' }}>Hết hàng</span>
               )}
-
             </div>
 
-            {highlightSpecs.length > 0 && (
-
-              <div className="quick-specs">
-
-                {highlightSpecs.map((spec) => (
-
-                  <div className="quick-spec-item" key={spec.attribute_id}>
-
-                    <span className="quick-spec-icon">
-                      {getSpecIcon(spec.attribute_name)}
-                    </span>
-
-                    <div>
-                      <div className="quick-spec-label">
-                        {spec.attribute_name}
-                      </div>
-                      <div className="quick-spec-value">
-                        {formatSpecValue(spec)}
-                      </div>
-                    </div>
-
-                  </div>
-
-                ))}
-
-              </div>
-
-            )}
-
-            <div className="product-price">
-
-              {formatPrice(finalPrice)}
-
+            {/* Khu vực giá tiền đã được sửa */}
+            <div className="product-detail-price">
+              <strong>{formatPrice(finalPrice)}</strong>
+              {product.percent_off > 0 && (
+                <del>{formatPrice(product.price + variantExtra)}</del>
+              )}
             </div>
-
-            {product.percent_off > 0 && (
-
-              <div className="old-price">
-
-                <del>
-                  {formatPrice(product.price + variantExtra)}
-                </del>
-
-              </div>
-
-            )}
 
             {hasVariants && activeDimensions.length > 0 && (
-
-              <div className="variant-selector">
-
+              <div className="variant-selector mb-4">
                 {activeDimensions.map((dim) => {
-
                   const values = [
-                    ...new Set(
-                      variants.map((v) => v[dim.key]).filter(Boolean)
-                    ),
+                    ...new Set(variants.map((v) => v[dim.key]).filter(Boolean)),
                   ];
-
                   return (
-
-                    <div className="variant-group" key={dim.key}>
-
-                      <div className="variant-group-label">
-                        {dim.label}
-                      </div>
-
-                      <div className="variant-options">
-
+                    <div className="variant-group mb-3" key={dim.key}>
+                      <div className="variant-group-label fw-bold mb-2">{dim.label}</div>
+                      <div className="variant-options d-flex gap-2 flex-wrap">
                         {values.map((value) => {
-
-                          const isSelected =
-                            selectedOptions[dim.key] === value;
-                          const available = isOptionAvailable(
-                            dim.key,
-                            value
-                          );
-
+                          const isSelected = selectedOptions[dim.key] === value;
+                          const available = isOptionAvailable(dim.key, value);
                           return (
-
                             <button
                               type="button"
                               key={value}
-                              className={
-                                "variant-option-btn" +
-                                (isSelected ? " active" : "") +
-                                (!available ? " disabled" : "")
-                              }
+                              className={`btn ${isSelected ? "btn-dark" : "btn-outline-secondary"} ${!available ? "disabled" : ""}`}
                               disabled={!available}
-                              onClick={() =>
-                                handleSelectOption(dim.key, value)
-                              }
+                              onClick={() => handleSelectOption(dim.key, value)}
                             >
                               {value}
                             </button>
-
                           );
-
                         })}
-
                       </div>
-
                     </div>
-
                   );
-
                 })}
-
                 {!matchedVariant && (
-
-                  <p className="variant-unavailable">
-                    Cấu hình này hiện chưa có sẵn.
-                  </p>
-
+                  <p className="text-danger mt-2 mb-0">Cấu hình này hiện chưa có sẵn.</p>
                 )}
-
               </div>
-
             )}
 
-            <div className="product-meta">
-
-              <p>
-
-                ⭐ <strong>{rating}</strong>/5
-
-                <span className="ms-2">
-
-                  ({reviewCount} đánh giá)
-
-                </span>
-
-              </p>
-
-              <p>
-
-                Thương hiệu:
-
-                <strong className="ms-2">
-
-                  {product.brand}
-
-                </strong>
-
-              </p>
-
-              <p>
-
-                Danh mục:
-
-                <strong className="ms-2">
-
-                  {product.category}
-
-                </strong>
-
-              </p>
-
-              <p>
-
-                Kho còn:
-
-                <strong className="ms-2">
-
-                  {stock}
-
-                </strong>
-
-              </p>
-
+            {/* Mô tả sản phẩm đã được sửa */}
+            <div className="product-detail-description">
+              <p>{product.description || "Sản phẩm chưa có mô tả chi tiết."}</p>
             </div>
 
-            <div className="description-box">
-
-              <h5>Mô tả sản phẩm</h5>
-
-              <p>
-
-                {product.description ||
-
-                  "Sản phẩm chưa có mô tả chi tiết."}
-
-              </p>
-
-            </div>
-
-            <div className="action-box">
-
+            {/* Nút bấm mua hàng đã được sửa */}
+            <div className="product-detail-actions mt-4">
               <button
-                className="btn btn-dark btn-lg add-cart-btn"
+                className="product-detail-primary-btn"
                 disabled={stock <= 0 || (hasVariants && !matchedVariant)}
                 onClick={handleAddToCart}
               >
-                🛒 {stock > 0
-                  ? "Thêm vào giỏ hàng"
-                  : "Hết hàng"}
+                🛒 {stock > 0 ? "Thêm vào giỏ hàng" : "Hết hàng"}
               </button>
-
-              <button
-                className="btn btn-outline-dark btn-lg"
-              >
+              <button className="product-detail-secondary-btn">
                 ❤️ Yêu thích
               </button>
-
             </div>
 
           </div>
-
         </div>
 
         {specifications.length > 0 && (
-
-          <div className="spec-section">
-
-            <h3>Thông số kỹ thuật</h3>
-
-            <div className="spec-table">
-
+          <div className="spec-section mt-5 bg-white p-4 rounded shadow-sm">
+            <h3 className="mb-4">Thông số kỹ thuật</h3>
+            <div className="row g-4">
               {specGroupNames.map((groupName) => (
-
-                <div className="spec-group" key={groupName}>
-
-                  <h5 className="spec-group-title">{groupName}</h5>
-
-                  <table className="table spec-group-table">
+                <div className="col-md-6" key={groupName}>
+                  <h5 className="text-danger border-bottom pb-2 mb-3">{groupName}</h5>
+                  <table className="table table-striped">
                     <tbody>
-
                       {groupedSpecs[groupName].map((spec) => (
-
                         <tr key={spec.attribute_id}>
-                          <td className="spec-name">
-                            {spec.attribute_name}
-                          </td>
-                          <td className="spec-value">
-                            {formatSpecValue(spec)}
-                          </td>
+                          <td className="text-muted w-50">{spec.attribute_name}</td>
+                          <td className="fw-bold">{formatSpecValue(spec)}</td>
                         </tr>
-
                       ))}
-
                     </tbody>
                   </table>
-
                 </div>
-
               ))}
-
             </div>
-
           </div>
-
         )}
 
         {recommendations.length > 0 && (
-
-          <div className="related-section">
-
-            <div className="section-header">
-
-              <h3>Sản phẩm liên quan</h3>
-
-              <span>Có thể bạn cũng thích</span>
-
-            </div>
-
+          <div className="related-section mt-5">
+            <h3 className="mb-4">Sản phẩm liên quan</h3>
             <div className="row g-4">
-
               {recommendations.map((item) => {
-
-                const price =
-                  item.percent_off
-                    ? item.price -
-                      (item.percent_off * item.price) / 100
-                    : item.price;
-
+                const price = item.percent_off
+                  ? item.price - (item.percent_off * item.price) / 100
+                  : item.price;
                 return (
-
-                  <div
-                    className="col-lg-3 col-md-4 col-sm-6"
-                    key={item.id}
-                  >
-
-                    <div className="related-card">
-
-                      <Link
-                        to={`/products/${item.id}`}
-                        className="text-decoration-none"
-                      >
-
-                        <div className="related-image">
-
-                          <img
-                            src={
-                              item.image_url ||
-                              fallbackImage
-                            }
-                            alt={item.name}
-                          />
-
-                        </div>
-
-                        <div className="related-body">
-
-                          <h6>{item.name}</h6>
-
-                          <div className="related-price">
-
-                            <span className="price">
-
-                              {formatPrice(price)}
-
-                            </span>
-
+                  <div className="col-lg-3 col-md-4 col-sm-6" key={item.id}>
+                    <div className="card h-100 shadow-sm border-0">
+                      <Link to={`/products/${item.id}`} className="text-decoration-none text-dark">
+                        <img
+                          src={item.image_url || fallbackImage}
+                          className="card-img-top bg-light p-3"
+                          alt={item.name}
+                          style={{ objectFit: 'contain', height: '200px' }}
+                        />
+                        <div className="card-body">
+                          <h6 className="card-title text-truncate">{item.name}</h6>
+                          <div className="d-flex justify-content-between align-items-center mt-3">
+                            <strong className="text-danger">{formatPrice(price)}</strong>
                             {item.percent_off > 0 && (
-
-                              <small>
-
-                                <del>
-
-                                  {formatPrice(item.price)}
-
-                                </del>
-
+                              <small className="text-muted text-decoration-line-through">
+                                {formatPrice(item.price)}
                               </small>
-
                             )}
-
                           </div>
-
-                          <div className="related-rating">
-
-                            ⭐ {item.average_rating || 5}
-
-                            <span>
-
-                              ({item.review_count || 0})
-
-                            </span>
-
-                          </div>
-
                         </div>
-
                       </Link>
-
                     </div>
-
                   </div>
-
                 );
-
               })}
-
             </div>
-
           </div>
-
         )}
 
       </div>
-
     </>
-
   );
-
 }
 
 export default ProductDetail;

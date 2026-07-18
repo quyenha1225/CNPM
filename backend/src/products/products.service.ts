@@ -30,7 +30,9 @@ export class ProductsService {
   }
 
   // Chi tiet 1 san pham - dung cho ProductDetail.jsx (them rating/reviewCount)
+// Chi tiet 1 san pham - dung cho ProductDetail.jsx (them rating/reviewCount, specifications, variants)
   async findOne(productId: number) {
+    // 1. Lấy thông tin cơ bản của sản phẩm (Kèm theo Tổng tồn kho từ View)
     const rows = await this.dataSource.query(
       `
       SELECT 
@@ -39,23 +41,75 @@ export class ProductsService {
         p.product_description AS description,
         p.base_price AS price, 
         p.warranty_months AS warrantyMonths,
-        c.category_slug AS category, 
+        c.category_name AS category, 
         b.brand_name AS brand, 
         pi.image_url,
         p.average_rating AS rating,
-        p.review_count AS reviewCount
+        p.review_count AS reviewCount,
+        0 AS percent_off,
+        COALESCE(vs.current_stock, 0) AS stock_quantity
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.category_id
       LEFT JOIN brands b ON p.brand_id = b.brand_id
       LEFT JOIN product_images pi ON p.product_id = pi.product_id AND pi.is_thumbnail = TRUE
+      LEFT JOIN vw_product_stock vs ON p.product_id = vs.product_id
       WHERE p.product_id = ? AND p.product_status = 'ACTIVE'
       LIMIT 1
       `,
       [productId],
     );
-    return rows[0] ?? null;
-  }
 
+    const product = rows[0];
+    if (!product) return null; // Trả về null nếu không tìm thấy
+
+    // 2. Lấy danh sách Thông số kỹ thuật (Specifications)
+    const specifications = await this.dataSource.query(
+      `
+      SELECT 
+        pa.attribute_id, 
+        pa.attribute_name, 
+        pa.attribute_unit, 
+        pa.spec_group, 
+        pa.display_order, 
+        pa.is_highlight, 
+        pav.attribute_value
+      FROM product_attribute_values pav
+      JOIN product_attributes pa ON pav.attribute_id = pa.attribute_id
+      WHERE pav.product_id = ?
+      ORDER BY pa.display_order ASC
+      `,
+      [productId],
+    );
+
+    // 3. Lấy danh sách Cấu hình/Phiên bản (Variants kèm theo Tồn kho của từng bản)
+    const variants = await this.dataSource.query(
+      `
+      SELECT 
+        pv.variant_id, 
+        pv.variant_name, 
+        pv.sku, 
+        pv.color, 
+        pv.ram_size, 
+        pv.storage_size, 
+        pv.gpu_option, 
+        pv.cpu_option, 
+        pv.additional_price, 
+        pv.is_default,
+        COALESCE(vi.stock_quantity, 0) AS stock_quantity
+      FROM product_variants pv
+      LEFT JOIN variant_inventory vi ON pv.variant_id = vi.variant_id
+      WHERE pv.product_id = ? AND pv.variant_status = 'ACTIVE'
+      `,
+      [productId],
+    );
+
+    // 4. Nhồi 2 mảng vừa lấy được vào trong object product ban đầu
+    product.specifications = specifications;
+    product.variants = variants;
+
+    // Trả về dữ liệu hoàn chỉnh (Fulfilled object) cho Frontend
+    return product;
+  }
   async getRecommendedProducts(productId: number) {
     return await this.dataSource.query(
       `
