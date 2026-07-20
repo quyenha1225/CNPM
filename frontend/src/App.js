@@ -11,7 +11,13 @@ import Register from "./auth/Register";
 import ForgotPassword from "./auth/ForgotPassword";
 import Cart from "./cart/Cart";
 import Payment from "./payment/Payment";
-import AdminLayout from "./layouts/AdminLayout"; // Nhớ import layout Admin của chúng ta vào
+
+// Layout & Pages dành cho Admin
+import AdminLayout from "./layouts/AdminLayout";
+import Dashboard from "./admin/Dashboard";
+import UserManager from "./admin/UserManager";
+import ProductManager from "./admin/ProductManager";
+import OrderManager from "./admin/OrderManager";
 
 // Map chuẩn khớp 100% với category_slug trong Database MySQL
 const categorySlugMap = {
@@ -77,9 +83,8 @@ function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
-
       {/* =========================================
-          KHU VỰC 2: KHÁCH HÀNG & MUA SẮM (Bọc bằng Template của bạn)
+          KHU VỰC 2: KHÁCH HÀNG & MUA SẮM (Bọc bằng Template)
           ========================================= */}
       <Route element={
         <Template setCategory={setCurrentCategory} setBrand={setCurrentBrand} userRole={userRole} setUserRole={setUserRole}>
@@ -95,7 +100,7 @@ function App() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/payment" element={<Payment />} />
         
-        {/* Bắt lỗi trang 404 cho khu vực khách hàng */}
+        {/* Trang 404 cho khu vực khách hàng */}
         <Route path="*" element={
           <div className="container mt-5 text-center">
             <h1 className="text-danger">404 - Không tìm thấy trang</h1>
@@ -104,23 +109,26 @@ function App() {
         } />
       </Route>
 
-
       {/* =========================================
           KHU VỰC 3: QUẢN TRỊ VIÊN (Chỉ ADMIN & STAFF)
           ========================================= */}
       <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']} />}>
-        {/* Bọc toàn bộ các trang quản trị bằng AdminLayout HTML thuần vừa tạo */}
         <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<h3>Tổng quan thống kê (Dashboard)</h3>} />
-          <Route path="products" element={<h3>Trang Thêm/Sửa/Xóa Sản phẩm</h3>} />
-          <Route path="orders" element={<h3>Trang duyệt Đơn hàng</h3>} />
           
+          {/* 1. Trang Tổng quan Dashboard */}
+          <Route index element={<Dashboard />} /> 
+          
+          {/* 2. Trang Quản lý Sản phẩm & Đơn hàng */}
+          <Route path="products" element={<ProductManager />} />
+          <Route path="orders" element={<OrderManager />} />
+          
+          {/* 3. Trang Quản lý User (Chỉ ADMIN mới vào được) */}
           <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-            <Route path="users" element={<h3>Trang quản lý, phân quyền tài khoản</h3>} />
+            <Route path="users" element={<UserManager />} />
           </Route>
+
         </Route>
       </Route>
-
     </Routes>
   );
 }

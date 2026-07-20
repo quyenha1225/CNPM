@@ -1,77 +1,126 @@
-﻿import { useState } from "react";
+﻿import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faKey, faEnvelope, faPaperPlane, faShieldAlt, faCheck, faRedo, faLock, faEye, faEyeSlash, faSave, faArrowLeft, faCheckCircle, faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 import "./Auth.css";
 
 function ForgotPassword() {
-  const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: Reset Password
+  const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  // Step 1: Send OTP
+  const [modalConfig, setModalConfig] = useState({
+    show: false,
+    title: "",
+    message: "",
+    type: "error",
+    nextStep: null
+  });
+
   const handleSendOtp = (e) => {
     e.preventDefault();
     if (!email) {
-      setError("Vui lòng nhập email");
+      setModalConfig({ show: true, title: "Lỗi", message: "Vui lòng nhập địa chỉ email!", type: "error" });
       return;
     }
     if (!/\S+@\S+\.\S+/.test(email)) {
-      setError("Email không hợp lệ");
+      setModalConfig({ show: true, title: "Lỗi", message: "Địa chỉ email không hợp lệ!", type: "error" });
       return;
     }
-    setError("");
-    setStep(2);
-    alert("OTP đã được gửi đến email của bạn");
+
+    setModalConfig({
+      show: true,
+      title: "Đã gửi mã OTP",
+      message: `Mã xác thực 6 chữ số đã được gửi đến ${email}`,
+      type: "success",
+      nextStep: 2
+    });
   };
 
-  // Step 2: Verify OTP
   const handleVerifyOtp = (e) => {
     e.preventDefault();
     if (!otp) {
-      setError("Vui lòng nhập mã OTP");
+      setModalConfig({ show: true, title: "Lỗi", message: "Vui lòng nhập mã OTP!", type: "error" });
       return;
     }
     if (otp.length !== 6) {
-      setError("OTP phải có 6 chữ số");
+      setModalConfig({ show: true, title: "Lỗi", message: "Mã OTP phải có đúng 6 chữ số!", type: "error" });
       return;
     }
-    setError("");
-    setStep(3);
-    alert("Mã OTP xác thực thành công");
+
+    setModalConfig({
+      show: true,
+      title: "Xác thực thành công",
+      message: "Mã OTP hợp lệ. Bạn có thể đặt lại mật khẩu mới ngay bây giờ.",
+      type: "success",
+      nextStep: 3
+    });
   };
 
-  // Step 3: Reset Password
   const handleResetPassword = (e) => {
     e.preventDefault();
     if (!newPassword) {
-      setError("Vui lòng nhập mật khẩu mới");
+      setModalConfig({ show: true, title: "Lỗi", message: "Vui lòng nhập mật khẩu mới!", type: "error" });
       return;
     }
     if (newPassword.length < 6) {
-      setError("Mật khẩu phải có ít nhất 6 ký tự");
+      setModalConfig({ show: true, title: "Lỗi", message: "Mật khẩu phải có ít nhất 6 ký tự!", type: "error" });
       return;
     }
     if (newPassword !== confirmPassword) {
-      setError("Mật khẩu xác nhận không khớp");
+      setModalConfig({ show: true, title: "Lỗi", message: "Mật khẩu xác nhận không khớp!", type: "error" });
       return;
     }
-    setError("");
-    alert("Mật khẩu đã được đặt lại thành công!");
-    navigate("/login");
+
+    setModalConfig({
+      show: true,
+      title: "Thành công!",
+      message: "Mật khẩu của bạn đã được cập nhật lại thành công.",
+      type: "success",
+      nextStep: "LOGIN"
+    });
+  };
+
+  const handleCloseModal = () => {
+    const targetStep = modalConfig.nextStep;
+    setModalConfig({ ...modalConfig, show: false, nextStep: null });
+
+    if (targetStep === "LOGIN") {
+      navigate("/login");
+    } else if (targetStep) {
+      setStep(targetStep);
+    }
   };
 
   return (
     <div className="auth-container">
+      {/* CSS Animation hiệu ứng trượt từ dưới lên */}
+      <style>{`
+        @keyframes fadeInBackdrop {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUpModal {
+          from { transform: translateY(60px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .custom-modal-backdrop {
+          animation: fadeInBackdrop 0.3s ease forwards;
+        }
+        .custom-modal-box {
+          animation: slideUpModal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+      `}</style>
+
       <div className="auth-card">
         <div className="auth-header">
           <h2 className="text-dark mb-4">
-            <FontAwesomeIcon icon={["fas", "key"]} /> Quên Mật Khẩu
+            <FontAwesomeIcon icon={faKey} /> Quên Mật Khẩu
           </h2>
           <p className="text-muted">
             {step === 1 && "Nhập email của bạn để nhận mã xác thực"}
@@ -80,31 +129,15 @@ function ForgotPassword() {
           </p>
         </div>
 
-        {/* Step Indicator */}
         <div className="progress mb-4">
-          <div
-            className="progress-bar"
-            style={{ width: `${(step / 3) * 100}%` }}
-          ></div>
+          <div className="progress-bar" style={{ width: `${(step / 3) * 100}%` }}></div>
         </div>
 
-        {error && (
-          <div className="alert alert-danger alert-dismissible fade show" role="alert">
-            <FontAwesomeIcon icon={["fas", "exclamation-circle"]} /> {error}
-            <button
-              type="button"
-              className="btn-close"
-              onClick={() => setError("")}
-            ></button>
-          </div>
-        )}
-
-        {/* Step 1: Email */}
         {step === 1 && (
           <form onSubmit={handleSendOtp} className="auth-form">
             <div className="mb-4">
               <label htmlFor="email" className="form-label">
-                <FontAwesomeIcon icon={["fas", "envelope"]} /> Địa chỉ Email
+                <FontAwesomeIcon icon={faEnvelope} /> Địa chỉ Email
               </label>
               <input
                 type="email"
@@ -114,22 +147,19 @@ function ForgotPassword() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
-              <small className="text-muted">
-                Chúng tôi sẽ gửi mã OTP đến email này
-              </small>
+              <small className="text-muted">Chúng tôi sẽ gửi mã OTP đến email này</small>
             </div>
             <button type="submit" className="btn btn-primary btn-lg w-100">
-              <FontAwesomeIcon icon={["fas", "paper-plane"]} /> Gửi Mã OTP
+              <FontAwesomeIcon icon={faPaperPlane} /> Gửi Mã OTP
             </button>
           </form>
         )}
 
-        {/* Step 2: OTP */}
         {step === 2 && (
           <form onSubmit={handleVerifyOtp} className="auth-form">
             <div className="mb-4">
               <label htmlFor="otp" className="form-label">
-                <FontAwesomeIcon icon={["fas", "shield-alt"]} /> Mã Xác Thực
+                <FontAwesomeIcon icon={faShieldAlt} /> Mã Xác Thực
               </label>
               <input
                 type="text"
@@ -140,44 +170,24 @@ function ForgotPassword() {
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
               />
-              <small className="text-muted d-block mt-2">
-                Nhập 6 chữ số được gửi đến {email}
-              </small>
+              <small className="text-muted d-block mt-2">Nhập 6 chữ số được gửi đến {email}</small>
             </div>
             <div className="d-grid gap-2">
               <button type="submit" className="btn btn-primary btn-lg">
-                <FontAwesomeIcon icon={["fas", "check"]} /> Xác Thực OTP
+                <FontAwesomeIcon icon={faCheck} /> Xác Thực OTP
               </button>
-              <button
-                type="button"
-                className="btn btn-outline-secondary"
-                onClick={() => setStep(1)}
-              >
-                <FontAwesomeIcon icon={["fas", "redo"]} /> Quay Lại
+              <button type="button" className="btn btn-outline-secondary" onClick={() => setStep(1)}>
+                <FontAwesomeIcon icon={faRedo} /> Quay Lại
               </button>
-            </div>
-            <div className="text-center mt-3">
-              <small className="text-muted">
-                Không nhận được OTP?{" "}
-                <button
-                  type="button"
-                  className="btn btn-link p-0 text-primary"
-                  onClick={() => alert("Đã gửi lại OTP")}
-                >
-                  Gửi lại
-                </button>
-              </small>
             </div>
           </form>
         )}
 
-        {/* Step 3: New Password */}
         {step === 3 && (
           <form onSubmit={handleResetPassword} className="auth-form">
-            {/* New Password */}
             <div className="mb-3">
               <label htmlFor="newPassword" className="form-label">
-                <FontAwesomeIcon icon={["fas", "lock"]} /> Mật Khẩu Mới
+                <FontAwesomeIcon icon={faLock} /> Mật Khẩu Mới
               </label>
               <div className="password-input-group">
                 <input
@@ -188,25 +198,15 @@ function ForgotPassword() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
-                <button
-                  type="button"
-                  className="btn-show-password"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  <FontAwesomeIcon
-                    icon={["fas", showPassword ? "eye-slash" : "eye"]}
-                  />
+                <button type="button" className="btn-show-password" onClick={() => setShowPassword(!showPassword)}>
+                  <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
                 </button>
               </div>
-              <small className="text-muted d-block mt-1">
-                Mật khẩu phải có ít nhất 6 ký tự
-              </small>
             </div>
 
-            {/* Confirm Password */}
             <div className="mb-4">
               <label htmlFor="confirmPassword" className="form-label">
-                <FontAwesomeIcon icon={["fas", "lock"]} /> Xác Nhận Mật Khẩu
+                <FontAwesomeIcon icon={faLock} /> Xác Nhận Mật Khẩu
               </label>
               <div className="password-input-group">
                 <input
@@ -217,31 +217,61 @@ function ForgotPassword() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
-                <button
-                  type="button"
-                  className="btn-show-password"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  <FontAwesomeIcon
-                    icon={["fas", showConfirmPassword ? "eye-slash" : "eye"]}
-                  />
+                <button type="button" className="btn-show-password" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                  <FontAwesomeIcon icon={showConfirmPassword ? faEyeSlash : faEye} />
                 </button>
               </div>
             </div>
 
             <button type="submit" className="btn btn-success btn-lg w-100">
-              <FontAwesomeIcon icon={["fas", "save"]} /> Lưu Mật Khẩu Mới
+              <FontAwesomeIcon icon={faSave} /> Lưu Mật Khẩu Mới
             </button>
           </form>
         )}
 
-        {/* Back to Login */}
         <div className="text-center mt-4">
           <Link to="/login" className="text-muted text-decoration-none">
-            <FontAwesomeIcon icon={["fas", "arrow-left"]} /> Quay lại đăng nhập
+            <FontAwesomeIcon icon={faArrowLeft} /> Quay lại đăng nhập
           </Link>
         </div>
       </div>
+
+      {modalConfig.show && (
+        <div
+          className="custom-modal-backdrop"
+          style={{
+            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999
+          }}
+        >
+          <div
+            className="custom-modal-box"
+            style={{
+              background: '#ffffff', borderRadius: '16px', padding: '30px', width: '90%', maxWidth: '380px', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+            }}
+          >
+            <div style={{ marginBottom: '15px' }}>
+              <FontAwesomeIcon 
+                icon={modalConfig.type === 'error' ? faTimesCircle : faCheckCircle} 
+                style={{ fontSize: '56px', color: modalConfig.type === 'error' ? '#e74c3c' : '#2ecc71' }} 
+              />
+            </div>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '20px', fontWeight: 'bold', color: '#333' }}>
+              {modalConfig.title}
+            </h3>
+            <p style={{ color: '#666', fontSize: '14px', lineHeight: '1.5', marginBottom: '25px' }}>
+              {modalConfig.message}
+            </p>
+            <button onClick={handleCloseModal} style={{
+              background: modalConfig.type === 'error' ? '#e74c3c' : '#2ecc71',
+              color: '#fff', border: 'none', padding: '12px 0', borderRadius: '8px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', width: '100%'
+            }}>
+              Đồng ý
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

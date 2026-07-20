@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -45,7 +44,44 @@ function Cart() {
   const originalTotal = cartRows.reduce((total, item) => total + item.originalTotal, 0);
   const savedTotal = Math.max(0, originalTotal - subtotal);
 
+  // --- HÀM CHECKOUT LƯU ĐẦY ĐỦ THÔNG TIN SẢN PHẨM VÀO LOCALSTORAGE FOR ADMIN ---
   function checkout() {
+    if (cartRows.length === 0) return;
+
+    // 1. Lấy thông tin người dùng đang đăng nhập
+    const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+
+    // 2. Tạo ID ngẫu nhiên (dạng số)
+    const newOrderId = Math.floor(10025 + Math.random() * 90000);
+
+    // 3. Đóng gói đơn hàng + chi tiết danh sách sản phẩm (items)
+    const newOrder = {
+      order_id: newOrderId,
+      customer_name: currentUser.name || currentUser.fullName || "Khách hàng mới",
+      phone: currentUser.phone || "0987654321",
+      total_price: subtotal,
+      status: "PENDING", // Chuẩn Enum: PENDING
+      created_at: new Date().toISOString().split("T")[0],
+      // LƯU CHI TIẾT SẢN PHẨM ĐỂ ADMIN XEM
+      items: cartRows.map((r) => ({
+        id: r.product.id,
+        name: r.product.name,
+        price: r.salePrice,
+        quantity: r.quantity,
+        image: r.product.image
+      })),
+    };
+
+    // 4. Lấy danh sách đơn hàng Admin hiện tại từ key 'admin_orders_data'
+    const existingOrders = JSON.parse(localStorage.getItem("admin_orders_data") || "[]");
+
+    // 5. Thêm đơn hàng mới vào ĐẦU danh sách
+    const updatedOrders = [newOrder, ...existingOrders];
+
+    // 6. Ghi đè lại vào LocalStorage với key 'admin_orders_data'
+    localStorage.setItem("admin_orders_data", JSON.stringify(updatedOrders));
+
+    // 7. Clear giỏ hàng & báo thành công
     clearCart();
     setOrderStatus("Đã tiếp nhận đơn hàng. Gearxin sẽ liên hệ xác nhận trong ít phút.");
   }

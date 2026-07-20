@@ -1,8 +1,9 @@
 ﻿import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { toast } from "../utils/Toast";
-import "./Auth.css"; // Giữ lại CSS tuyệt đẹp của bạn!
+import { faEnvelope, faLock, faEye, faEyeSlash, faTimesCircle, faCheckCircle, faExclamationTriangle, faSignInAlt, faUserPlus, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { faGoogle, faFacebook } from "@fortawesome/free-brands-svg-icons";
+import "./Auth.css";
 
 function Login({ setUserRole }) {
   const [email, setEmail] = useState("");
@@ -11,80 +12,127 @@ function Login({ setUserRole }) {
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
 
+  const [modalConfig, setModalConfig] = useState({
+    show: false,
+    title: "",
+    message: "",
+    type: "error",
+  });
+
   const validateForm = () => {
     const newErrors = {};
-    
     if (!email) {
       newErrors.email = "Email không được để trống";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = "Email không hợp lệ";
     }
-    
     if (!password) {
       newErrors.password = "Mật khẩu không được để trống";
     } else if (password.length < 6) {
       newErrors.password = "Mật khẩu phải có ít nhất 6 ký tự";
     }
-    
     return newErrors;
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     const newErrors = validateForm();
-    
-    // Báo lỗi form bằng Toast thay vì Alert
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      toast.warning("⚠ Vui lòng kiểm tra lại thông tin", 3000);
+      setModalConfig({
+        show: true,
+        title: "Thông tin không hợp lệ",
+        message: "Vui lòng kiểm tra lại email và mật khẩu của bạn!",
+        type: "warning",
+      });
       return;
     }
-    
+
     setErrors({});
 
     try {
-      // Gọi API thực tế tới Backend
       const response = await fetch('http://localhost:3001/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("✓ Đăng nhập thành công! Chào mừng quay lại!", 2000);
-        
-        // Lưu token và thông tin user vào localStorage
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
 
-        // Cập nhật state role cho App.js
         if (setUserRole) {
           setUserRole(data.user.role_code);
         }
 
-        // Chờ Toast chạy nửa giây rồi mới chuyển hướng
-        setTimeout(() => {
-          if (data.user.role_code === 'ADMIN' || data.user.role_code === 'STAFF') {
-            navigate("/admin");
-          } else {
-            navigate("/");
-          }
-        }, 500);
+        setModalConfig({
+          show: true,
+          title: "Đăng nhập thành công!",
+          message: "Chào mừng bạn đã quay trở lại ElectroShop!",
+          type: "success",
+        });
 
       } else {
-        toast.error("Đăng nhập thất bại: " + data.message, 3000);
+        setModalConfig({
+          show: true,
+          title: "Đăng nhập thất bại",
+          message: data.message || "Email hoặc mật khẩu không chính xác!",
+          type: "error",
+        });
       }
     } catch (error) {
-      toast.error("Không thể kết nối tới Server Backend!", 3000);
+      setModalConfig({
+        show: true,
+        title: "Lỗi kết nối",
+        message: "Không thể kết nối đến máy chủ Backend!",
+        type: "error",
+      });
     }
+  };
+
+  const handleCloseModal = () => {
+    const isSuccess = modalConfig.type === "success";
+    setModalConfig({ ...modalConfig, show: false });
+    
+    if (isSuccess) {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (user.role_code === 'ADMIN' || user.role_code === 'STAFF') {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
+    }
+  };
+
+  const renderModalIcon = () => {
+    if (modalConfig.type === 'success') return <FontAwesomeIcon icon={faCheckCircle} style={{ fontSize: '56px', color: '#2ecc71' }} />;
+    if (modalConfig.type === 'warning') return <FontAwesomeIcon icon={faExclamationTriangle} style={{ fontSize: '56px', color: '#f39c12' }} />;
+    return <FontAwesomeIcon icon={faTimesCircle} style={{ fontSize: '56px', color: '#e74c3c' }} />;
   };
 
   return (
     <div className="auth-container">
+      {/* CSS Animation hiệu ứng trượt từ dưới lên */}
+      <style>{`
+        @keyframes fadeInBackdrop {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUpModal {
+          from { transform: translateY(60px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .custom-modal-backdrop {
+          animation: fadeInBackdrop 0.3s ease forwards;
+        }
+        .custom-modal-box {
+          animation: slideUpModal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+      `}</style>
+
       <div className="auth-card">
         <div className="auth-header">
           <h2>Đăng Nhập</h2>
@@ -92,10 +140,9 @@ function Login({ setUserRole }) {
         </div>
 
         <form onSubmit={handleLogin} className="auth-form">
-          {/* Email Field */}
           <div className="form-group">
             <label htmlFor="email" className="form-label">
-              <FontAwesomeIcon icon={["fas", "envelope"]} /> Email
+              <FontAwesomeIcon icon={faEnvelope} /> Email
             </label>
             <input
               type="email"
@@ -111,10 +158,9 @@ function Login({ setUserRole }) {
             {errors.email && <div className="invalid-feedback">{errors.email}</div>}
           </div>
 
-          {/* Password Field */}
           <div className="form-group">
             <label htmlFor="password" className="form-label">
-              <FontAwesomeIcon icon={["fas", "lock"]} /> Mật khẩu
+              <FontAwesomeIcon icon={faLock} /> Mật khẩu
             </label>
             <div className="password-input-group">
               <input
@@ -133,70 +179,83 @@ function Login({ setUserRole }) {
                 className="btn-show-password"
                 onClick={() => setShowPassword(!showPassword)}
               >
-                <FontAwesomeIcon
-                  icon={["fas", showPassword ? "eye-slash" : "eye"]}
-                />
+                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
               </button>
             </div>
             {errors.password && <div className="invalid-feedback">{errors.password}</div>}
           </div>
 
-          {/* Remember Me & Forgot Password */}
           <div className="auth-options">
             <div className="form-check">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                id="rememberMe"
-              />
-              <label className="form-check-label" htmlFor="rememberMe">
-                Nhớ tôi
-              </label>
+              <input className="form-check-input" type="checkbox" id="rememberMe" />
+              <label className="form-check-label" htmlFor="rememberMe">Nhớ tôi</label>
             </div>
-            <Link
-              to="/forgot-password"
-              className="forgot-password-link"
-            >
-              Quên mật khẩu?
-            </Link>
+            <Link to="/forgot-password" className="forgot-password-link">Quên mật khẩu?</Link>
           </div>
 
-          {/* Login Button */}
           <button type="submit" className="btn btn-primary btn-lg w-100 mb-3">
-            <FontAwesomeIcon icon={["fas", "sign-in-alt"]} /> Đăng Nhập
+            <FontAwesomeIcon icon={faSignInAlt} /> Đăng Nhập
           </button>
         </form>
 
-        {/* Divider */}
         <div className="auth-divider">
           <span>HOẶC</span>
         </div>
 
-        {/* Register Button */}
-        <Link
-          to="/register"
-          className="btn btn-outline-primary btn-lg w-100 mb-3"
-        >
-          <FontAwesomeIcon icon={["fas", "user-plus"]} /> Tạo Tài Khoản Mới
+        <Link to="/register" className="btn btn-outline-primary btn-lg w-100 mb-3">
+          <FontAwesomeIcon icon={faUserPlus} /> Tạo Tài Khoản Mới
         </Link>
 
-        {/* Social Login */}
         <div className="social-login">
           <button className="btn btn-outline-secondary btn-sm w-100 mb-2" type="button">
-            <FontAwesomeIcon icon={["fab", "google"]} /> Đăng nhập bằng Google
+            <FontAwesomeIcon icon={faGoogle} /> Đăng nhập bằng Google
           </button>
           <button className="btn btn-outline-secondary btn-sm w-100" type="button">
-            <FontAwesomeIcon icon={["fab", "facebook"]} /> Đăng nhập bằng Facebook
+            <FontAwesomeIcon icon={faFacebook} /> Đăng nhập bằng Facebook
           </button>
         </div>
 
-        {/* Back to Home */}
         <div className="back-to-home">
           <Link to="/">
-            <FontAwesomeIcon icon={["fas", "arrow-left"]} /> Quay lại trang chủ
+            <FontAwesomeIcon icon={faArrowLeft} /> Quay lại trang chủ
           </Link>
         </div>
       </div>
+
+      {/* FRAME MODAL CHÍNH GIỮA CÓ ANIMATION TRƯỢT TỪ DƯỚI LÊN */}
+      {modalConfig.show && (
+        <div
+          className="custom-modal-backdrop"
+          style={{
+            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999
+          }}
+        >
+          <div
+            className="custom-modal-box"
+            style={{
+              background: '#ffffff', borderRadius: '16px', padding: '30px', width: '90%', maxWidth: '380px', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+            }}
+          >
+            <div style={{ marginBottom: '15px' }}>
+              {renderModalIcon()}
+            </div>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '20px', fontWeight: 'bold', color: '#333' }}>
+              {modalConfig.title}
+            </h3>
+            <p style={{ color: '#666', fontSize: '14px', lineHeight: '1.5', marginBottom: '25px' }}>
+              {modalConfig.message}
+            </p>
+            <button onClick={handleCloseModal} style={{
+              background: modalConfig.type === 'error' ? '#e74c3c' : modalConfig.type === 'warning' ? '#f39c12' : '#2ecc71',
+              color: '#fff', border: 'none', padding: '12px 0', borderRadius: '8px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', width: '100%'
+            }}>
+              Đồng ý
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
