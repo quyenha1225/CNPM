@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import Product from "./Product";
 
-// 1. CÂY DANH MỤC SIDEBAR BÊN TRÁI - Đồng bộ chuẩn 100% với category_slug dưới Database
+// 1. CÂY DANH MỤC BANNER / SIDEBAR BÊN TRÁI
 export const menuCategories = [
   { id: "dien-thoai", name: "Điện thoại" },
   { id: "laptop", name: "Laptop" },
@@ -11,7 +11,23 @@ export const menuCategories = [
   { id: "man-hinh", name: "Màn hình" },
 ];
 
-// Định nghĩa các khoảng giá lọc mới theo yêu cầu của bạn
+// 2. MAPPING CHUẨN 100% VỚI DATABASE electroshop_db (1: ĐIỆN THOẠI, 2: LAPTOP, 3: PHỤ KIỆN, 4: LINH KIỆN PC)
+const categoryIdToSlug = {
+  1: "dien-thoai",
+  2: "laptop",
+  3: "phu-kien",
+  4: "linh-kien-pc",
+  "1": "dien-thoai",
+  "2": "laptop",
+  "3": "phu-kien",
+  "4": "linh-kien-pc",
+  "dien-thoai": "dien-thoai",
+  "laptop": "laptop",
+  "phu-kien": "phu-kien",
+  "linh-kien-pc": "linh-kien-pc",
+  "man-hinh": "man-hinh"
+};
+
 const priceOptions = [
   { value: "", label: "Tất cả mức giá" },
   { value: "duoi10", label: "Dưới 10 triệu" },
@@ -30,11 +46,10 @@ function ProductList({ category, setCategory, brand, setBrand }) {
   const productsTopRef = useRef(null);
   const productsPerPage = 12;
 
-  // Đọc danh mục đang chạy từ thanh URL trình duyệt (Hỗ trợ định dạng Route của dự án)
   const params = useParams();
   const routeCategory = params.category || params.categorySlug;
 
-  // Lắng nghe sự thay đổi của URL từ thanh Navbar để đồng bộ bộ lọc
+  // Lắng nghe sự thay đổi URL từ Navbar
   useEffect(() => {
     if (routeCategory) {
       setCategory(routeCategory);
@@ -45,50 +60,116 @@ function ProductList({ category, setCategory, brand, setBrand }) {
     setPriceRange("");
   }, [routeCategory, setCategory, setBrand]);
 
-  // Lấy dữ liệu trực tiếp từ Backend API (NestJS - PORT 3001)
-  useEffect(() => {
+  // Load và đồng bộ toàn bộ danh sách sản phẩm từ DB & LocalStorage
+  const fetchAllProducts = async () => {
     setLoading(true);
-    fetch("http://localhost:3001/api/products")
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error("Không thể tải danh sách sản phẩm!");
+    let apiProducts = [];
+
+    try {
+      const res = await fetch("http://localhost:3001/api/products");
+      if (res.ok) {
+        const data = await res.json();
+        apiProducts = Array.isArray(data) ? data : data.products || data.data || [];
+      }
+    } catch (err) {
+      console.warn("API NestJS không phản hồi, tiến hành lấy từ LocalStorage");
+    }
+
+    // Đọc sản phẩm lưu thủ công/thêm mới từ Admin thông qua LocalStorage
+    const localProducts = JSON.parse(localStorage.getItem('global_products') || '[]');
+
+    // Hợp nhất dữ liệu
+    const allRaw = [...apiProducts, ...localProducts];
+
+    // Map dữ liệu SQL sang định dạng chuẩn của React
+    const uniqueMap = new Map();
+    allRaw.forEach((item) => {
+      const pId = Number(item.product_id || item.id);
+      if (pId && !uniqueMap.has(pId)) {
+        // Lấy category slug dựa vào ID chuẩn từ electroshop_db
+        const rawCat = item.category_id || item.category || "dien-thoai";
+        const catSlug = categoryIdToSlug[rawCat] || "dien-thoai";
+
+        // Tự động detect thương hiệu nếu trong DB SQL chưa có cột brand
+        let detectedBrand = item.brand || "Khác";
+        const pName = (item.product_name || item.name || "").toLowerCase();
+        if (pName.includes("iphone") || pName.includes("macbook") || pName.includes("apple")) detectedBrand = "Apple";
+        else if (pName.includes("samsung") || pName.includes("galaxy")) detectedBrand = "Samsung";
+        else if (pName.includes("asus") || pName.includes("rog")) detectedBrand = "ASUS";
+        else if (pName.includes("lenovo") || pName.includes("thinkpad")) detectedBrand = "Lenovo";
+        else if (pName.includes("hp") || pName.includes("victus") || pName.includes("elitebook")) detectedBrand = "HP";
+        else if (pName.includes("acer") || pName.includes("swift")) detectedBrand = "Acer";
+        else if (pName.includes("msi")) detectedBrand = "MSI";
+        else if (pName.includes("xiaomi")) detectedBrand = "Xiaomi";
+        else if (pName.includes("oppo")) detectedBrand = "Oppo";
+        else if (pName.includes("logitech")) detectedBrand = "Logitech";
+        else if (pName.includes("razer")) detectedBrand = "Razer";
+        else if (pName.includes("corsair")) detectedBrand = "Corsair";
+
+        // Xử lý ảnh sản phẩm (Ưu tiên ảnh từ product_images table)
+        let imgUrl = item.image_url || item.image || "";
+        if (!imgUrl && Array.isArray(item.product_images) && item.product_images.length > 0) {
+          imgUrl = item.product_images[0].image_url;
         }
-        return res.json();
-      })
-      .then((data) => {
-        setProducts(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
+        if (!imgUrl) {
+          imgUrl = "https://via.placeholder.com/300";
+        }
+
+        uniqueMap.set(pId, {
+          id: pId,
+          product_id: pId,
+          name: item.product_name || item.name || "Sản phẩm",
+          product_name: item.product_name || item.name || "Sản phẩm",
+          price: Number(item.base_price || item.price || 0),
+          base_price: Number(item.base_price || item.price || 0),
+          image: imgUrl,
+          image_url: imgUrl,
+          category: catSlug,
+          brand: detectedBrand,
+          slug: item.product_slug || item.slug || ""
+        });
+      }
+    });
+
+    // Sắp xếp ID từ mới nhất đến cũ hơn hoặc theo thứ tự tăng dần
+    const normalizedList = Array.from(uniqueMap.values()).sort((a, b) => a.id - b.id);
+    setProducts(normalizedList);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchAllProducts();
+
+    // 💡 Đồng bộ Real-Time khi thêm sản phẩm bên trang Admin
+    const handleSync = () => fetchAllProducts();
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("products_updated", handleSync);
+
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("products_updated", handleSync);
+    };
   }, []);
 
-  // TỰ ĐỘNG GOM THƯƠNG HIỆU: Chỉ hiển thị các hãng đang có sản phẩm thực tế trong DB
-  // Giúp danh sách ngắn gọn, luôn xổ xuống (Dropdown) cực kỳ ngăn nắp
+  // Danh sách thương hiệu tự động
   const availableBrands = useMemo(() => {
     const brandsInDb = products
       .map((item) => item.brand)
       .filter((brandName) => brandName && brandName.trim() !== "");
 
-    // Loại bỏ các hãng trùng lặp và sắp xếp theo bảng chữ cái A-Z
     return Array.from(new Set(brandsInDb)).sort();
   }, [products]);
 
-  // Logic lọc sản phẩm tổng hợp (Lọc theo Category + Brand + Giá)
+  // Bộ lọc sản phẩm
   const filteredProducts = useMemo(() => {
     return products.filter((item) => {
-      // 1. Khớp danh mục
       const matchCategory = category === "" || item.category === category;
 
-      // 2. Khớp thương hiệu (Chuyển về chữ thường để loại bỏ hoàn toàn lỗi lệch chữ hoa/thường)
       const matchBrand =
         brand === "" ||
         (item.brand &&
           item.brand.trim().toLowerCase() === brand.trim().toLowerCase());
 
-      // 3. Khớp khoảng giá mới
       let matchPrice = true;
       if (priceRange === "duoi10") {
         matchPrice = item.price < 10000000;
@@ -106,7 +187,7 @@ function ProductList({ category, setCategory, brand, setBrand }) {
     });
   }, [products, category, brand, priceRange]);
 
-  // Tính số lượng sản phẩm cho từng danh mục ở menu bên trái
+  // Đếm số lượng sản phẩm mỗi danh mục
   const categoryCounts = useMemo(() => {
     return products.reduce((counts, item) => {
       counts[item.category] = (counts[item.category] || 0) + 1;
@@ -117,7 +198,7 @@ function ProductList({ category, setCategory, brand, setBrand }) {
   // Phân trang
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredProducts.length / productsPerPage),
+    Math.ceil(filteredProducts.length / productsPerPage)
   );
   const indexOfFirstProduct = (currentPage - 1) * productsPerPage;
   const indexOfLastProduct = indexOfFirstProduct + productsPerPage;
@@ -171,7 +252,7 @@ function ProductList({ category, setCategory, brand, setBrand }) {
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Đang tải...</span>
         </div>
-        <p className="mt-2">Đang tải danh sách sản phẩm từ máy chủ...</p>
+        <p className="mt-2">Đang đồng bộ dữ liệu với electroshop_db...</p>
       </div>
     );
   }
@@ -210,7 +291,6 @@ function ProductList({ category, setCategory, brand, setBrand }) {
       </div>
 
       <div className="product-filter-panel">
-        {/* Bộ lọc mức giá */}
         <label>
           <span>Mức giá</span>
           <select
@@ -226,7 +306,6 @@ function ProductList({ category, setCategory, brand, setBrand }) {
           </select>
         </label>
 
-        {/* Bộ lọc loại sản phẩm */}
         <label>
           <span>Loại sản phẩm</span>
           <select
@@ -243,7 +322,6 @@ function ProductList({ category, setCategory, brand, setBrand }) {
           </select>
         </label>
 
-        {/* Bộ lọc thương hiệu thông minh (Dynamic Brands) */}
         <label>
           <span>Thương hiệu</span>
           <select
