@@ -1,23 +1,36 @@
-import { Link, useLocation } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+} from "react-router-dom";
+import {
+  useEffect,
+  useState,
+} from "react";
 
 function AiSearchResult() {
   const location = useLocation();
 
-  let storedData = null;
+  const [data, setData] = useState(null);
 
-  try {
-    const savedResult =
-      sessionStorage.getItem("aiSearchResult");
+  useEffect(() => {
+    if (location.state?.aiSearchResult) {
+      setData(location.state.aiSearchResult);
+      return;
+    }
 
-    storedData = savedResult
-      ? JSON.parse(savedResult)
-      : null;
-  } catch {
-    storedData = null;
-  }
+    try {
+      const savedResult =
+        sessionStorage.getItem("aiSearchResult");
 
-  const data =
-    location.state?.aiSearchResult || storedData;
+      setData(
+        savedResult
+          ? JSON.parse(savedResult)
+          : null
+      );
+    } catch {
+      setData(null);
+    }
+  }, [location.key, location.search, location.state]);
 
   if (!data) {
     return (
@@ -28,7 +41,10 @@ function AiSearchResult() {
           Hãy nhập nhu cầu của bạn vào thanh tìm kiếm.
         </p>
 
-        <Link to="/" className="btn btn-primary">
+        <Link
+          to="/"
+          className="btn btn-primary"
+        >
           Quay lại trang chủ
         </Link>
       </div>
@@ -36,23 +52,22 @@ function AiSearchResult() {
   }
 
   return (
-    <div
-      className="container ai-search-page"
-      key={location.state?.searchedAt || data.searchLogId}
-    >
+    <div className="container ai-search-page">
       <div className="ai-search-summary">
         <h2>Kết quả tìm kiếm AI</h2>
 
         <p>
-          <strong>Yêu cầu:</strong> {data.query}
+          <strong>Yêu cầu:</strong>{" "}
+          {data.query}
         </p>
 
         <p>{data.message}</p>
 
         {data.exactBudgetMatch === false && (
           <div className="alert alert-warning">
-            Không có sản phẩm đúng hoàn toàn ngân sách.
-            Hệ thống đang hiển thị lựa chọn gần nhất.
+            Không có sản phẩm đúng hoàn toàn
+            ngân sách. Hệ thống đang hiển thị
+            lựa chọn gần nhất.
           </div>
         )}
       </div>
@@ -79,9 +94,9 @@ function AiSearchResult() {
                   </h5>
 
                   <p className="ai-search-price">
-                    {Number(product.price).toLocaleString(
-                      "vi-VN"
-                    )}
+                    {Number(
+                      product.price
+                    ).toLocaleString("vi-VN")}
                     đ
                   </p>
 
@@ -100,21 +115,17 @@ function AiSearchResult() {
                   </div>
 
                   {product.matchReasons?.length > 0 && (
-                    <div>
-                      <strong>Lý do phù hợp:</strong>
-
-                      <ul className="ai-search-reasons">
-                        {product.matchReasons.map(
-                          (reason, index) => (
-                            <li
-                              key={`${product.productId}-${index}`}
-                            >
-                              {reason}
-                            </li>
-                          )
-                        )}
-                      </ul>
-                    </div>
+                    <ul className="ai-search-reasons">
+                      {product.matchReasons.map(
+                        (reason, index) => (
+                          <li
+                            key={`${product.productId}-${index}`}
+                          >
+                            {reason}
+                          </li>
+                        )
+                      )}
+                    </ul>
                   )}
 
                   <Link

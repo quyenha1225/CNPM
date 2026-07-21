@@ -1,3 +1,4 @@
+
 import {
   BadRequestException,
   Injectable,
@@ -7,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { DataSource, QueryRunner } from 'typeorm';
 import { AiSearchDto } from './dto/ai-search.dto';
-
+import { GoogleGenAI } from '@google/genai';
 export interface ParsedRequirements {
   intent: string;
   productType: string | null;
@@ -114,20 +115,42 @@ export class AiService {
     let aiModel = 'RULE_BASED';
 
     try {
-      const aiResult =
-        await this.parseQueryWithExternalAi(query);
+  console.log('Đang gọi Gemini...');
 
-      if (aiResult) {
-        parsedRequirements = aiResult.requirements;
-        aiProvider = aiResult.provider;
-        aiModel = aiResult.model;
-      } else {
-        parsedRequirements = this.parseQueryLocally(query);
-      }
-    } catch (error) {
-      console.error('External AI parse failed:', error);
-      parsedRequirements = this.parseQueryLocally(query);
-    }
+  const aiResult =
+    await this.parseQueryWithExternalAi(query);
+
+  if (aiResult) {
+    console.log('Gemini gọi thành công:', {
+      provider: aiResult.provider,
+      model: aiResult.model,
+      requirements: aiResult.requirements,
+    });
+
+    parsedRequirements = aiResult.requirements;
+    aiProvider = aiResult.provider;
+    aiModel = aiResult.model;
+  } else {
+    console.warn(
+      'Không có GEMINI_API_KEY, chuyển sang LOCAL_FALLBACK.',
+    );
+
+    parsedRequirements = this.parseQueryLocally(query);
+  }
+} catch (error: unknown) {
+  const errorMessage =
+    error instanceof Error
+      ? error.message
+      : String(error);
+
+  console.error('========== GEMINI FAILED ==========');
+  console.error('Message:', errorMessage);
+  console.error('Full error:', error);
+  console.error('Chuyển sang LOCAL_FALLBACK');
+  console.error('===================================');
+
+  parsedRequirements = this.parseQueryLocally(query);
+}
 
     const customerId = await this.resolveCustomerId(
       dto.customerId,
@@ -455,59 +478,39 @@ export class AiService {
     };
   }
 
-  private async parseQueryWithExternalAi(
-    query: string,
-  ): Promise<{
-    requirements: ParsedRequirements;
-    provider: string;
-    model: string;
-  } | null> {
-    const apiKey =
-      this.configService.get<string>('OPENAI_API_KEY');
+ private async parseQueryWithExternalAi(
+  query: string,
+): Promise<{
+  requirements: ParsedRequirements;
+  provider: string;
+  model: string;
+} | null> {
+  const apiKey =
+    this.configService.get<string>('GEMINI_API_KEY');
 
-    if (!apiKey) {
-      return null;
-    }
-
-    const model =
-      this.configService.get<string>('OPENAI_MODEL') ||
-      'gpt-4.1-mini';
-
-    const abortController = new AbortController();
-
-    const timeout = setTimeout(
-      () => abortController.abort(),
-      15000,
+  if (!apiKey) {
+    console.warn(
+      'GEMINI_API_KEY chưa được cấu hình, dùng LOCAL_FALLBACK.',
     );
 
-    try {
-      const response = await fetch(
-        'https://api.openai.com/v1/responses',
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          signal: abortController.signal,
-          body: JSON.stringify({
-            model,
-            store: false,
-            temperature: 0,
-            input: [
-              {
-                role: 'system',
-                content: [
-                  {
-                    type: 'input_text',
-                    text: `
+    return null;
+  }
+
+  const model =
+    this.configService.get<string>('GEMINI_MODEL') ||
+  'gemini-3-flash-preview';
+  const ai = new GoogleGenAI({
+    apiKey,
+  });
+
+  const prompt = `
 Bạn là bộ phân tích yêu cầu tìm kiếm cho cửa hàng điện tử.
 
-Chỉ trả về một JSON object hợp lệ.
+Hãy phân tích câu người dùng và chỉ trả về một JSON object hợp lệ.
 Không dùng markdown.
 Không giải thích thêm.
 
-Cấu trúc:
+Cấu trúc bắt buộc:
 {
   "intent": "product_search",
   "productType": string | null,
@@ -523,74 +526,65 @@ Cấu trúc:
 }
 
 Quy tắc:
-- Giá phải chuyển thành VND dạng số.
+- Giá phải chuyển thành số VND.
 - "2 triệu" = 2000000.
 - "500 nghìn" = 500000.
-- productType dùng tên ngắn:
-  laptop, điện thoại, ram, ssd, cpu,
-  gpu, màn hình hoặc phụ kiện.
-- categorySlug chỉ dùng:
+- productType dùng tên ngắn như:
+  laptop, điện thoại, ram, ssd, cpu, gpu, màn hình, phụ kiện.
+- categorySlug chỉ được dùng:
   laptop,
   dien-thoai,
   linh-kien-pc,
   man-hinh,
   phu-kien.
-- Không bịa yêu cầu người dùng không nói.
-                    `.trim(),
-                  },
-                ],
-              },
-              {
-                role: 'user',
-                content: [
-                  {
-                    type: 'input_text',
-                    text: query,
-                  },
-                ],
-              },
-            ],
-          }),
-        },
+- Không tự bịa yêu cầu người dùng không nói.
+
+Câu tìm kiếm:
+${query}
+  `.trim();
+
+  try {
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        temperature: 0,
+        responseMimeType: 'application/json',
+      },
+    });
+
+    const outputText = response.text?.trim();
+
+    if (!outputText) {
+      throw new Error(
+        'Gemini không trả về nội dung.',
       );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-
-        throw new Error(
-          `OpenAI HTTP ${response.status}: ${errorText}`,
-        );
-      }
-
-      const responseData: any = await response.json();
-
-      const outputText =
-        this.extractOpenAiOutputText(responseData);
-
-      if (!outputText) {
-        throw new Error(
-          'OpenAI không trả về nội dung.',
-        );
-      }
-
-      const jsonText =
-        this.extractJsonObject(outputText);
-
-      const parsed = JSON.parse(jsonText);
-
-      return {
-        requirements:
-          this.normalizeParsedRequirements(
-            parsed,
-            query,
-          ),
-        provider: 'OPENAI',
-        model,
-      };
-    } finally {
-      clearTimeout(timeout);
     }
+
+    const jsonText =
+      this.extractJsonObject(outputText);
+
+    const parsed = JSON.parse(jsonText);
+
+    return {
+      requirements:
+        this.normalizeParsedRequirements(
+          parsed,
+          query,
+        ),
+      provider: 'GEMINI',
+      model,
+    };
+  } catch (error) {
+    console.error(
+      'Gemini API parse failed:',
+      error,
+    );
+
+    throw error;
   }
+}
+  
 
   private extractOpenAiOutputText(
     responseData: any,

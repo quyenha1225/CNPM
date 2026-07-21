@@ -1373,5 +1373,463 @@ SELECT
     NOW() AS completed_at;
     SET SQL_SAFE_UPDATES = 1;
     
+
+SET SQL_SAFE_UPDATES = 0;
+
+-- =====================================================
+-- 1. ĐẢM BẢO 2 SẢN PHẨM TỒN TẠI
+-- =====================================================
+
+SELECT product_id, product_name, base_price
+FROM products
+WHERE product_id IN (32, 39);
+
+-- =====================================================
+-- 2. TẠO CÁC THUỘC TÍNH CẦN THIẾT NẾU CHƯA CÓ
+-- =====================================================
+
+INSERT IGNORE INTO product_attributes (
+    attribute_code,
+    attribute_name,
+    spec_group,
+    attribute_unit,
+    value_type,
+    display_order,
+    is_highlight,
+    is_filterable,
+    is_ai_searchable,
+    attribute_description
+)
+VALUES
+(
+    'PRODUCT_TYPE',
+    'Loại sản phẩm',
+    'Thông tin chung',
+    NULL,
+    'TEXT',
+    1,
+    TRUE,
+    TRUE,
+    TRUE,
+    'Loại sản phẩm dùng để tìm kiếm'
+),
+(
+    'RAM_CAPACITY_GB',
+    'Dung lượng RAM',
+    'Thông số RAM',
+    'GB',
+    'NUMBER',
+    2,
+    TRUE,
+    TRUE,
+    TRUE,
+    'Dung lượng RAM tính bằng GB'
+),
+(
+    'TARGET_USER',
+    'Đối tượng phù hợp',
+    'AI Recommendation',
+    NULL,
+    'TEXT',
+    3,
+    FALSE,
+    TRUE,
+    TRUE,
+    'Nhóm người dùng phù hợp'
+),
+(
+    'USE_CASE',
+    'Mục đích sử dụng',
+    'AI Recommendation',
+    NULL,
+    'TEXT',
+    4,
+    FALSE,
+    TRUE,
+    TRUE,
+    'Nhu cầu sử dụng phù hợp'
+),
+(
+    'MULTITASKING_LEVEL',
+    'Khả năng đa nhiệm',
+    'AI Recommendation',
+    NULL,
+    'TEXT',
+    5,
+    FALSE,
+    TRUE,
+    TRUE,
+    'Mức độ đa nhiệm phù hợp'
+),
+(
+    'RAM_RECOMMENDED_TAB_COUNT',
+    'Số tab trình duyệt phù hợp',
+    'AI Recommendation',
+    'tab',
+    'NUMBER',
+    6,
+    FALSE,
+    TRUE,
+    TRUE,
+    'Số tab trình duyệt phù hợp'
+),
+(
+    'COMPATIBILITY_NOTE',
+    'Thông tin tương thích',
+    'Tương thích',
+    NULL,
+    'TEXT',
+    7,
+    FALSE,
+    TRUE,
+    TRUE,
+    'Thông tin cần kiểm tra trước khi mua'
+);
+
+-- =====================================================
+-- 3. GẮN CÁC THUỘC TÍNH RAM VÀO DANH MỤC LINH KIỆN PC
+-- =====================================================
+
+INSERT IGNORE INTO category_attributes (
+    category_id,
+    attribute_id
+)
+SELECT
+    c.category_id,
+    pa.attribute_id
+FROM categories c
+CROSS JOIN product_attributes pa
+WHERE c.category_slug = 'linh-kien-pc'
+  AND pa.attribute_code IN (
+      'PRODUCT_TYPE',
+      'RAM_CAPACITY_GB',
+      'TARGET_USER',
+      'USE_CASE',
+      'MULTITASKING_LEVEL',
+      'RAM_RECOMMENDED_TAB_COUNT',
+      'COMPATIBILITY_NOTE'
+  );
+
+-- =====================================================
+-- 4. INSERT THUỘC TÍNH RAM CORSAIR 32GB
+-- PRODUCT_ID = 32
+-- =====================================================
+
+INSERT INTO product_attribute_values (
+    product_id,
+    attribute_id,
+    attribute_value,
+    numeric_value,
+    boolean_value,
+    normalized_value
+)
+SELECT
+    32,
+    pa.attribute_id,
+
+    CASE pa.attribute_code
+        WHEN 'PRODUCT_TYPE'
+            THEN 'RAM'
+
+        WHEN 'RAM_CAPACITY_GB'
+            THEN '32'
+
+        WHEN 'TARGET_USER'
+            THEN 'Sinh viên công nghệ, lập trình viên và người dùng đa nhiệm'
+
+        WHEN 'USE_CASE'
+            THEN 'Học tập, lập trình, làm việc và mở nhiều tab'
+
+        WHEN 'MULTITASKING_LEVEL'
+            THEN 'Đa nhiệm cao'
+
+        WHEN 'RAM_RECOMMENDED_TAB_COUNT'
+            THEN '30'
+
+        WHEN 'COMPATIBILITY_NOTE'
+            THEN 'Cần kiểm tra chuẩn DDR, bus RAM và dạng DIMM hoặc SO-DIMM'
+    END AS attribute_value,
+
+    CASE pa.attribute_code
+        WHEN 'RAM_CAPACITY_GB' THEN 32
+        WHEN 'RAM_RECOMMENDED_TAB_COUNT' THEN 30
+        ELSE NULL
+    END AS numeric_value,
+
+    NULL AS boolean_value,
+
+    CASE pa.attribute_code
+        WHEN 'PRODUCT_TYPE'
+            THEN 'ram'
+
+        WHEN 'RAM_CAPACITY_GB'
+            THEN '32'
+
+        WHEN 'TARGET_USER'
+            THEN 'sinh vien cong nghe lap trinh vien nguoi dung da nhiem'
+
+        WHEN 'USE_CASE'
+            THEN 'hoc tap lap trinh lam viec mo nhieu tab'
+
+        WHEN 'MULTITASKING_LEVEL'
+            THEN 'da nhiem cao'
+
+        WHEN 'RAM_RECOMMENDED_TAB_COUNT'
+            THEN '30'
+
+        WHEN 'COMPATIBILITY_NOTE'
+            THEN 'kiem tra ddr bus ram dimm sodimm'
+    END AS normalized_value
+
+FROM product_attributes pa
+WHERE pa.attribute_code IN (
+    'PRODUCT_TYPE',
+    'RAM_CAPACITY_GB',
+    'TARGET_USER',
+    'USE_CASE',
+    'MULTITASKING_LEVEL',
+    'RAM_RECOMMENDED_TAB_COUNT',
+    'COMPATIBILITY_NOTE'
+)
+AND EXISTS (
+    SELECT 1
+    FROM products p
+    WHERE p.product_id = 32
+)
+
+ON DUPLICATE KEY UPDATE
+    attribute_value = VALUES(attribute_value),
+    numeric_value = VALUES(numeric_value),
+    boolean_value = VALUES(boolean_value),
+    normalized_value = VALUES(normalized_value);
+
+-- =====================================================
+-- 5. INSERT THUỘC TÍNH RAM KINGSTON 16GB
+-- PRODUCT_ID = 39
+-- =====================================================
+
+INSERT INTO product_attribute_values (
+    product_id,
+    attribute_id,
+    attribute_value,
+    numeric_value,
+    boolean_value,
+    normalized_value
+)
+SELECT
+    39,
+    pa.attribute_id,
+
+    CASE pa.attribute_code
+        WHEN 'PRODUCT_TYPE'
+            THEN 'RAM'
+
+        WHEN 'RAM_CAPACITY_GB'
+            THEN '16'
+
+        WHEN 'TARGET_USER'
+            THEN 'Sinh viên, học sinh, nhân viên văn phòng và lập trình viên'
+
+        WHEN 'USE_CASE'
+            THEN 'Học tập, lập trình, văn phòng và mở 10 đến 15 tab'
+
+        WHEN 'MULTITASKING_LEVEL'
+            THEN 'Đa nhiệm khá'
+
+        WHEN 'RAM_RECOMMENDED_TAB_COUNT'
+            THEN '15'
+
+        WHEN 'COMPATIBILITY_NOTE'
+            THEN 'Cần kiểm tra chuẩn DDR, bus RAM và dạng DIMM hoặc SO-DIMM'
+    END AS attribute_value,
+
+    CASE pa.attribute_code
+        WHEN 'RAM_CAPACITY_GB' THEN 16
+        WHEN 'RAM_RECOMMENDED_TAB_COUNT' THEN 15
+        ELSE NULL
+    END AS numeric_value,
+
+    NULL AS boolean_value,
+
+    CASE pa.attribute_code
+        WHEN 'PRODUCT_TYPE'
+            THEN 'ram'
+
+        WHEN 'RAM_CAPACITY_GB'
+            THEN '16'
+
+        WHEN 'TARGET_USER'
+            THEN 'sinh vien hoc sinh nhan vien van phong lap trinh vien'
+
+        WHEN 'USE_CASE'
+            THEN 'hoc tap lap trinh van phong mo 10 den 15 tab'
+
+        WHEN 'MULTITASKING_LEVEL'
+            THEN 'da nhiem kha'
+
+        WHEN 'RAM_RECOMMENDED_TAB_COUNT'
+            THEN '15'
+
+        WHEN 'COMPATIBILITY_NOTE'
+            THEN 'kiem tra ddr bus ram dimm sodimm'
+    END AS normalized_value
+
+FROM product_attributes pa
+WHERE pa.attribute_code IN (
+    'PRODUCT_TYPE',
+    'RAM_CAPACITY_GB',
+    'TARGET_USER',
+    'USE_CASE',
+    'MULTITASKING_LEVEL',
+    'RAM_RECOMMENDED_TAB_COUNT',
+    'COMPATIBILITY_NOTE'
+)
+AND EXISTS (
+    SELECT 1
+    FROM products p
+    WHERE p.product_id = 39
+)
+
+ON DUPLICATE KEY UPDATE
+    attribute_value = VALUES(attribute_value),
+    numeric_value = VALUES(numeric_value),
+    boolean_value = VALUES(boolean_value),
+    normalized_value = VALUES(normalized_value);
+
+-- =====================================================
+-- 6. TẠO TAG NẾU CHƯA CÓ
+-- =====================================================
+
+INSERT IGNORE INTO product_tags (tag_name)
+VALUES
+('ram'),
+('sinh-vien'),
+('hoc-sinh'),
+('hoc-tap'),
+('lap-trinh'),
+('van-phong'),
+('da-nhiem'),
+('mo-nhieu-tab'),
+('10-15-tab'),
+('nang-cap-may'),
+('gia-re'),
+('gia-duoi-2-trieu'),
+('gia-duoi-5-trieu');
+
+-- =====================================================
+-- 7. GẮN TAG CHO RAM CORSAIR 32GB
+-- =====================================================
+
+INSERT IGNORE INTO product_tag_mapping (
+    product_id,
+    tag_id
+)
+SELECT
+    32,
+    pt.tag_id
+FROM product_tags pt
+WHERE pt.tag_name IN (
+    'ram',
+    'sinh-vien',
+    'lap-trinh',
+    'van-phong',
+    'da-nhiem',
+    'mo-nhieu-tab',
+    'nang-cap-may',
+    'gia-duoi-5-trieu'
+)
+AND EXISTS (
+    SELECT 1
+    FROM products p
+    WHERE p.product_id = 32
+);
+
+-- =====================================================
+-- 8. GẮN TAG CHO RAM KINGSTON 16GB
+-- =====================================================
+
+INSERT IGNORE INTO product_tag_mapping (
+    product_id,
+    tag_id
+)
+SELECT
+    39,
+    pt.tag_id
+FROM product_tags pt
+WHERE pt.tag_name IN (
+    'ram',
+    'sinh-vien',
+    'hoc-sinh',
+    'hoc-tap',
+    'lap-trinh',
+    'van-phong',
+    'da-nhiem',
+    'mo-nhieu-tab',
+    '10-15-tab',
+    'nang-cap-may',
+    'gia-re',
+    'gia-duoi-2-trieu'
+)
+AND EXISTS (
+    SELECT 1
+    FROM products p
+    WHERE p.product_id = 39
+);
+
+SET SQL_SAFE_UPDATES = 1;
+
+-- =====================================================
+-- 9. KIỂM TRA KẾT QUẢ THUỘC TÍNH
+-- =====================================================
+
+SELECT
+    p.product_id,
+    p.product_name,
+    pa.attribute_code,
+    pav.attribute_value,
+    pav.numeric_value,
+    pav.normalized_value
+FROM product_attribute_values pav
+JOIN products p
+    ON p.product_id = pav.product_id
+JOIN product_attributes pa
+    ON pa.attribute_id = pav.attribute_id
+WHERE p.product_id IN (32, 39)
+ORDER BY
+    p.product_id,
+    pa.attribute_code;
+
+-- =====================================================
+-- 10. KIỂM TRA KẾT QUẢ TAG
+-- =====================================================
+
+SELECT
+    p.product_id,
+    p.product_name,
+    pt.tag_name
+FROM product_tag_mapping ptm
+JOIN products p
+    ON p.product_id = ptm.product_id
+JOIN product_tags pt
+    ON pt.tag_id = ptm.tag_id
+WHERE p.product_id IN (32, 39)
+ORDER BY
+    p.product_id,
+    pt.tag_name;
     
-    
+    SELECT product_id, product_name
+FROM products
+WHERE product_id IN (32, 39);
+
+
+USE electroshop_db;
+
+SELECT
+    ai_search_log_id,
+    query_text,
+    search_status,
+    error_message,
+    searched_at
+FROM ai_search_logs
+ORDER BY ai_search_log_id DESC
+LIMIT 5;

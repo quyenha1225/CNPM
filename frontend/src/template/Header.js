@@ -112,16 +112,15 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
         );
       }
 
- sessionStorage.setItem(
+sessionStorage.setItem(
   "aiSearchResult",
   JSON.stringify(data)
 );
 
-navigate("/ai-search", {
+navigate(`/ai-search?search=${Date.now()}`, {
   replace: true,
   state: {
     aiSearchResult: data,
-    searchedAt: Date.now(),
   },
 });
     } catch (error) {
