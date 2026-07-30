@@ -1,260 +1,253 @@
-﻿import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import "./Auth.css";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { toast } from "../utils/Toast";
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phoneRegex = /^(03|05|07|08|09)\d{8}$/;
+
+function normalizePhone(value) {
+  return value.replace(/[\s.-]/g, "").replace(/^\+84/, "0");
+}
 
 function Register() {
-  const [formData, setFormData] = useState({
-    fullName: "",
+  const navigate = useNavigate();
+  const { register } = useAuth();
+
+  const [form, setForm] = useState({
+    name: "",
     email: "",
     phone: "",
     password: "",
     confirmPassword: "",
+    acceptedTerms: false,
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
-  const navigate = useNavigate();
+  const [serverError, setServerError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+  function updateField(name, value) {
+    setForm((previous) => ({ ...previous, [name]: value }));
+    setErrors((previous) => ({ ...previous, [name]: "" }));
+    setServerError("");
+  }
 
-  const validateForm = () => {
-    const newErrors = {};
+  function validate() {
+    const nextErrors = {};
+    const email = form.email.trim();
+    const phone = normalizePhone(form.phone);
 
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = "Vui lòng nhập họ tên";
+    if (form.name.trim().length < 2) {
+      nextErrors.name = "Họ tên phải có ít nhất 2 ký tự";
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = "Vui lòng nhập email";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email không hợp lệ";
+    if (!emailRegex.test(email)) {
+      nextErrors.email = "Email không đúng định dạng";
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Vui lòng nhập số điện thoại";
-    } else if (!/^\d{10}$/.test(formData.phone.replace(/\D/g, ""))) {
-      newErrors.phone = "Số điện thoại phải có 10 chữ số";
+    if (!phoneRegex.test(phone)) {
+      nextErrors.phone = "Số điện thoại Việt Nam không hợp lệ";
     }
 
-    if (!formData.password) {
-      newErrors.password = "Vui lòng nhập mật khẩu";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Mật khẩu phải có ít nhất 6 ký tự";
+    if (form.password.length < 8) {
+      nextErrors.password = "Mật khẩu phải có ít nhất 8 ký tự";
+    } else if (!/[a-z]/.test(form.password)) {
+      nextErrors.password = "Mật khẩu phải có chữ thường";
+    } else if (!/[A-Z]/.test(form.password)) {
+      nextErrors.password = "Mật khẩu phải có chữ hoa";
+    } else if (!/\d/.test(form.password)) {
+      nextErrors.password = "Mật khẩu phải có chữ số";
     }
 
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Vui lòng xác nhận mật khẩu";
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Mật khẩu xác nhận không khớp";
+    if (form.confirmPassword !== form.password) {
+      nextErrors.confirmPassword = "Mật khẩu xác nhận không khớp";
     }
 
-    return newErrors;
-  };
-
-  const handleRegister = (e) => {
-    e.preventDefault();
-    const newErrors = validateForm();
-
-    if (Object.keys(newErrors).length === 0) {
-      alert("Đăng ký thành công! Vui lòng đăng nhập.");
-      navigate("/login");
-    } else {
-      setErrors(newErrors);
+    if (!form.acceptedTerms) {
+      nextErrors.acceptedTerms = "Bạn cần đồng ý điều khoản sử dụng";
     }
-  };
+
+    return nextErrors;
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    const nextErrors = validate();
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length) {
+      toast.warning("Vui lòng kiểm tra lại thông tin", 2500);
+      return;
+    }
+
+    setSubmitting(true);
+    setServerError("");
+
+    try {
+      await register({
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+        phone: normalizePhone(form.phone),
+        password: form.password,
+      });
+
+      toast.success("Đăng ký thành công", 2000);
+      navigate("/", { replace: true });
+    } catch (error) {
+      setServerError(error.message);
+      toast.error(error.message, 3000);
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
-    <div className="auth-container">
-      <div className="auth-card auth-card-register">
-        <div className="auth-header">
-          <h2 className="text-dark mb-4">Tạo Tài Khoản</h2>
-          <p className="text-muted">Tham gia ElectroShop ngay để mua sắm</p>
-        </div>
+    <main className="auth-page auth-page--register">
+      <section className="auth-shell">
+        <aside className="auth-visual-panel">
+          <span className="auth-kicker">ElectroShop Member</span>
+          <h1>Tạo tài khoản để lưu giỏ hàng và nhận gợi ý phù hợp hơn</h1>
+          <p>
+            Thông tin được kiểm tra ở cả giao diện và NestJS. Email, số điện
+            thoại trùng hoặc mật khẩu yếu sẽ bị backend từ chối.
+          </p>
+        </aside>
 
-        <form onSubmit={handleRegister} className="auth-form">
-          {/* Full Name */}
-          <div className="mb-3">
-            <label htmlFor="fullName" className="form-label">
-              <FontAwesomeIcon icon={["fas", "user"]} /> Họ và Tên
-            </label>
-            <input
-              type="text"
-              className={`form-control form-control-lg ${
-                errors.fullName ? "is-invalid" : ""
-              }`}
-              id="fullName"
-              name="fullName"
-              placeholder="Nhập họ và tên"
-              value={formData.fullName}
-              onChange={handleChange}
-            />
-            {errors.fullName && (
-              <div className="invalid-feedback">{errors.fullName}</div>
-            )}
+        <div className="auth-form-panel">
+          <div className="auth-form-heading">
+            <span>Bắt đầu với ElectroShop</span>
+            <h2>Đăng ký tài khoản</h2>
           </div>
 
-          {/* Email */}
-          <div className="mb-3">
-            <label htmlFor="email" className="form-label">
-              <FontAwesomeIcon icon={["fas", "envelope"]} /> Email
-            </label>
-            <input
-              type="email"
-              className={`form-control form-control-lg ${
-                errors.email ? "is-invalid" : ""
-              }`}
-              id="email"
-              name="email"
-              placeholder="Nhập email"
-              value={formData.email}
-              onChange={handleChange}
-            />
-            {errors.email && (
-              <div className="invalid-feedback">{errors.email}</div>
-            )}
-          </div>
-
-          {/* Phone */}
-          <div className="mb-3">
-            <label htmlFor="phone" className="form-label">
-              <FontAwesomeIcon icon={["fas", "phone"]} /> Số Điện Thoại
-            </label>
-            <input
-              type="tel"
-              className={`form-control form-control-lg ${
-                errors.phone ? "is-invalid" : ""
-              }`}
-              id="phone"
-              name="phone"
-              placeholder="Nhập số điện thoại"
-              value={formData.phone}
-              onChange={handleChange}
-            />
-            {errors.phone && (
-              <div className="invalid-feedback">{errors.phone}</div>
-            )}
-          </div>
-
-          {/* Password */}
-          <div className="mb-3">
-            <label htmlFor="password" className="form-label">
-              <FontAwesomeIcon icon={["fas", "lock"]} /> Mật Khẩu
-            </label>
-            <div className="password-input-group">
-              <input
-                type={showPassword ? "text" : "password"}
-                className={`form-control form-control-lg ${
-                  errors.password ? "is-invalid" : ""
-                }`}
-                id="password"
-                name="password"
-                placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
-                value={formData.password}
-                onChange={handleChange}
-              />
-              <button
-                type="button"
-                className="btn-show-password"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                <FontAwesomeIcon
-                  icon={["fas", showPassword ? "eye-slash" : "eye"]}
-                />
-              </button>
+          {serverError && (
+            <div className="auth-server-error" role="alert">
+              {serverError}
             </div>
-            {errors.password && (
-              <div className="invalid-feedback d-block">{errors.password}</div>
-            )}
-          </div>
+          )}
 
-          {/* Confirm Password */}
-          <div className="mb-3">
-            <label htmlFor="confirmPassword" className="form-label">
-              <FontAwesomeIcon icon={["fas", "lock"]} /> Xác Nhận Mật Khẩu
-            </label>
-            <div className="password-input-group">
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                className={`form-control form-control-lg ${
-                  errors.confirmPassword ? "is-invalid" : ""
-                }`}
-                id="confirmPassword"
-                name="confirmPassword"
-                placeholder="Nhập lại mật khẩu"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-              />
-              <button
-                type="button"
-                className="btn-show-password"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                <FontAwesomeIcon
-                  icon={["fas", showConfirmPassword ? "eye-slash" : "eye"]}
+          <form onSubmit={handleSubmit} noValidate>
+            <label className="auth-field">
+              <span>Họ và tên</span>
+              <div className={`auth-input-wrap ${errors.name ? "is-invalid" : ""}`}>
+                <FontAwesomeIcon icon={["fas", "user"]} />
+                <input
+                  type="text"
+                  autoComplete="name"
+                  value={form.name}
+                  onChange={(event) => updateField("name", event.target.value)}
+                  placeholder="Nguyễn Văn A"
                 />
-              </button>
-            </div>
-            {errors.confirmPassword && (
-              <div className="invalid-feedback d-block">
-                {errors.confirmPassword}
               </div>
-            )}
-          </div>
-
-          {/* Terms & Conditions */}
-          <div className="form-check mb-4">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              id="terms"
-              required
-            />
-            <label className="form-check-label" htmlFor="terms">
-              Tôi đồng ý với{" "}
-              <Link to="/" className="text-primary text-decoration-none">
-                Điều khoản dịch vụ
-              </Link>{" "}
-              và{" "}
-              <Link to="/" className="text-primary text-decoration-none">
-                Chính sách bảo mật
-              </Link>
+              {errors.name && <small>{errors.name}</small>}
             </label>
-          </div>
 
-          {/* Register Button */}
-          <button type="submit" className="btn btn-primary btn-lg w-100 mb-3">
-            <FontAwesomeIcon icon={["fas", "user-plus"]} /> Tạo Tài Khoản
-          </button>
-        </form>
+            <label className="auth-field">
+              <span>Email</span>
+              <div className={`auth-input-wrap ${errors.email ? "is-invalid" : ""}`}>
+                <FontAwesomeIcon icon={["fas", "envelope"]} />
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={form.email}
+                  onChange={(event) => updateField("email", event.target.value)}
+                  placeholder="you@example.com"
+                />
+              </div>
+              {errors.email && <small>{errors.email}</small>}
+            </label>
 
-        {/* Divider */}
-        <div className="auth-divider">
-          <span>HOẶC</span>
+            <label className="auth-field">
+              <span>Số điện thoại</span>
+              <div className={`auth-input-wrap ${errors.phone ? "is-invalid" : ""}`}>
+                <FontAwesomeIcon icon={["fas", "phone"]} />
+                <input
+                  type="tel"
+                  autoComplete="tel"
+                  value={form.phone}
+                  onChange={(event) => updateField("phone", event.target.value)}
+                  placeholder="09xxxxxxxx"
+                />
+              </div>
+              {errors.phone && <small>{errors.phone}</small>}
+            </label>
+
+            <label className="auth-field">
+              <span>Mật khẩu</span>
+              <div className={`auth-input-wrap ${errors.password ? "is-invalid" : ""}`}>
+                <FontAwesomeIcon icon={["fas", "lock"]} />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  value={form.password}
+                  onChange={(event) =>
+                    updateField("password", event.target.value)
+                  }
+                  placeholder="Tối thiểu 8 ký tự"
+                />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setShowPassword((value) => !value)}
+                >
+                  <FontAwesomeIcon
+                    icon={["fas", showPassword ? "eye-slash" : "eye"]}
+                  />
+                </button>
+              </div>
+              {errors.password && <small>{errors.password}</small>}
+            </label>
+
+            <label className="auth-field">
+              <span>Xác nhận mật khẩu</span>
+              <div className={`auth-input-wrap ${errors.confirmPassword ? "is-invalid" : ""}`}>
+                <FontAwesomeIcon icon={["fas", "lock"]} />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  value={form.confirmPassword}
+                  onChange={(event) =>
+                    updateField("confirmPassword", event.target.value)
+                  }
+                  placeholder="Nhập lại mật khẩu"
+                />
+              </div>
+              {errors.confirmPassword && (
+                <small>{errors.confirmPassword}</small>
+              )}
+            </label>
+
+            <label className="auth-checkbox auth-checkbox--terms">
+              <input
+                type="checkbox"
+                checked={form.acceptedTerms}
+                onChange={(event) =>
+                  updateField("acceptedTerms", event.target.checked)
+                }
+              />
+              <span>Tôi đồng ý với điều khoản và chính sách bảo mật.</span>
+            </label>
+            {errors.acceptedTerms && (
+              <div className="auth-checkbox-error">{errors.acceptedTerms}</div>
+            )}
+
+            <button
+              type="submit"
+              className="auth-submit-btn"
+              disabled={submitting}
+            >
+              {submitting ? "Đang tạo tài khoản..." : "Đăng ký"}
+            </button>
+          </form>
+
+          <p className="auth-switch">
+            Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
+          </p>
         </div>
-
-        {/* Login Link */}
-        <div className="text-center">
-          <p className="text-muted mb-2">Bạn đã có tài khoản?</p>
-          <Link to="/login" className="btn btn-outline-primary btn-lg w-100">
-            <FontAwesomeIcon icon={["fas", "sign-in-alt"]} /> Đăng Nhập Ngay
-          </Link>
-        </div>
-
-        {/* Back to Home */}
-        <div className="text-center mt-4">
-          <Link to="/" className="text-muted text-decoration-none">
-            <FontAwesomeIcon icon={["fas", "arrow-left"]} /> Quay lại trang chủ
-          </Link>
-        </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
 

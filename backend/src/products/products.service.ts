@@ -3,6 +3,8 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { ProductCatalogService } from './product-catalog.service';
+
 
 @Injectable()
 export class ProductsService {
@@ -350,6 +352,89 @@ export class ProductsService {
       [productId],
     );
   }
+    async getTopSelling(limit = 10) {
+    const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 20);
+
+    const rows = await this.dataSource.query(`
+      SELECT
+        p.product_id AS id,
+        p.product_name AS name,
+        p.product_slug AS slug,
+        p.product_description AS description,
+        p.base_price AS price,
+        c.category_slug AS category,
+        c.category_name AS categoryName,
+        b.brand_name AS brand,
+        (
+          SELECT pi_sub.image_url
+          FROM product_images pi_sub
+          WHERE pi_sub.product_id = p.product_id
+            AND pi_sub.is_thumbnail = TRUE
+          LIMIT 1
+        ) AS image_url,
+        p.average_rating AS rating,
+        p.review_count AS reviewCount,
+        COALESCE(vps.current_stock, 0) AS stock_quantity,
+        COALESCE(
+          SUM(
+            CASE
+              WHEN oi.order_id IS NOT NULL
+                AND UPPER(os.order_status_code) NOT IN (
+                  'CANCELLED',
+                  'CANCELED',
+                  'REFUNDED',
+                  'FAILED'
+                )
+              THEN oi.ordered_quantity
+              ELSE 0
+            END
+          ),
+          0
+        ) AS sold_count
+      FROM products p
+      LEFT JOIN categories c
+        ON c.category_id = p.category_id
+      LEFT JOIN brands b
+        ON b.brand_id = p.brand_id
+      LEFT JOIN vw_product_stock vps
+        ON vps.product_id = p.product_id
+      LEFT JOIN order_items oi
+        ON oi.product_id = p.product_id
+      LEFT JOIN orders o
+        ON o.order_id = oi.order_id
+      LEFT JOIN order_statuses os
+        ON os.order_status_id = o.order_status_id
+      WHERE p.product_status = 'ACTIVE'
+      GROUP BY
+        p.product_id,
+        p.product_name,
+        p.product_slug,
+        p.product_description,
+        p.base_price,
+        c.category_slug,
+        c.category_name,
+        b.brand_name,
+        p.average_rating,
+        p.review_count,
+        vps.current_stock
+      ORDER BY
+        sold_count DESC,
+        p.average_rating DESC,
+        p.product_id DESC
+      LIMIT ${safeLimit}
+    `);
+
+    return rows.map((product: any) => ({
+      ...product,
+      id: Number(product.id),
+      price: Number(product.price ?? 0),
+      rating: Number(product.rating ?? 0),
+      reviewCount: Number(product.reviewCount ?? 0),
+      stock_quantity: Number(product.stock_quantity ?? 0),
+      sold_count: Number(product.sold_count ?? 0),
+    }));
+  }
+
 
   async createReview(
     productId: number,

@@ -1,195 +1,194 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { toast } from "../utils/Toast";
-import fallbackImage from "../nillkin-case-1.jpg";
 
-function formatPrice(price) {
-  return new Intl.NumberFormat("vi-VN").format(price) + " đ";
-}
+const API_BASE =
+  process.env.REACT_APP_API_URL || "http://localhost:3001/api";
 
-function Product({ data }) {
+const formatPrice = (value) =>
+  new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0));
+
+function Product({ data, itemIndex = 0 }) {
+  const navigate = useNavigate();
   const { addToCart } = useCart();
+  const [actionLoading, setActionLoading] = useState("");
 
-  const {
-    id,
-    name,
-    price,
-    image_url,
-    percent_off,
-    brand,
-    category,
-    average_rating,
-    review_count,
-    stock_quantity,
-  } = data;
+  const productId = Number(data.id);
+  const rating = Number(data.rating ?? data.average_rating ?? 0);
+  const reviewCount = Number(data.reviewCount ?? data.review_count ?? 0);
+  const totalSold = Number(data.totalSold ?? data.total_sold ?? 0);
+  const stock = Number(data.stock_quantity ?? data.stock ?? 0);
+  const image =
+    data.image_url ||
+    data.image ||
+    "https://via.placeholder.com/600x450?text=ElectroShop";
 
-  const image = image_url || fallbackImage;
-
-  const finalPrice =
-    percent_off > 0
-      ? price - (percent_off * price) / 100
-      : price;
-
-  const inStock = stock_quantity > 0;
-
-  const handleAddToCart = () => {
-    if (!inStock) {
-      toast.error("Sản phẩm đã hết hàng");
-      return;
-    }
-
-    addToCart({
-      id,
-      name,
-      price: finalPrice,
-      originalPrice: price,
-      brand,
-      category,
-      image,
-      quantity: 1,
-      stock: stock_quantity,
+  async function buildCartItem() {
+    const response = await fetch(`${API_BASE}/products/${productId}`, {
+      credentials: "include",
     });
 
-    toast.success("✓ Đã thêm vào giỏ hàng", 3000);
-  };
+    if (!response.ok) {
+      throw new Error("Không thể tải cấu hình sản phẩm");
+    }
+
+    const detail = await response.json();
+    const variants = Array.isArray(detail.variants) ? detail.variants : [];
+    const defaultVariant =
+      variants.find(
+        (variant) =>
+          variant.isDefault ||
+          variant.is_default ||
+          variant.is_default_variant,
+      ) || variants[0];
+
+    const additionalPrice = Number(
+      defaultVariant?.additionalPrice ??
+        defaultVariant?.additional_price ??
+        0,
+    );
+
+    const finalPrice = Number(detail.price ?? data.price ?? 0) + additionalPrice;
+
+    return {
+      id: productId,
+      variantId:
+        defaultVariant?.id ??
+        defaultVariant?.variantId ??
+        defaultVariant?.variant_id ??
+        null,
+      variantName:
+        defaultVariant?.name ??
+        defaultVariant?.variantName ??
+        defaultVariant?.variant_name ??
+        "Mặc định",
+      name: detail.name || data.name,
+      price: finalPrice,
+      image: detail.image || detail.image_url || image,
+      stock:
+        Number(
+          defaultVariant?.availableQuantity ??
+            defaultVariant?.available_quantity ??
+            detail.stock_quantity ??
+            stock,
+        ) || 0,
+      category: data.category,
+      brand: data.brand,
+    };
+  }
+
+  async function handleCartAction(mode) {
+    setActionLoading(mode);
+
+    try {
+      const item = await buildCartItem();
+
+      if (item.stock <= 0) {
+        throw new Error("Sản phẩm hiện đã hết hàng");
+      }
+
+      addToCart(item, 1);
+
+      if (mode === "buy") {
+        navigate("/payment");
+      } else {
+        toast.success("Đã thêm sản phẩm vào giỏ hàng", 2200);
+      }
+    } catch (error) {
+      toast.error(error.message, 3000);
+    } finally {
+      setActionLoading("");
+    }
+  }
 
   return (
-    <div className="col">
-      <div className="card shadow-sm h-100">
+    <article
+      className="product-card product-card--premium"
+      style={{ "--item-index": itemIndex }}
+    >
+      <Link
+        to={`/products/${productId}`}
+        className="product-card-media"
+        aria-label={`Xem chi tiết ${data.name}`}
+      >
+        <img className="product-card-image" src={image} alt={data.name} />
 
-        <Link to={`/products/${id}`}>
+        {totalSold > 0 && (
+          <span className="product-sales-badge">
+            <FontAwesomeIcon icon={["fas", "fire"]} />
+            Đã bán {totalSold}
+          </span>
+        )}
 
-          {percent_off > 0 && (
-            <div
-              className="badge bg-danger position-absolute"
-              style={{
-                top: 10,
-                right: 10,
-                zIndex: 10,
-              }}
-            >
-              -{percent_off}%
-            </div>
-          )}
+        {stock > 0 ? (
+          <span className="product-stock-chip is-available">
+            Còn {stock}
+          </span>
+        ) : (
+          <span className="product-stock-chip is-empty">Hết hàng</span>
+        )}
+      </Link>
 
-          {!inStock && (
-            <div
-              className="badge bg-secondary position-absolute"
-              style={{
-                top: 45,
-                right: 10,
-                zIndex: 10,
-              }}
-            >
-              Hết hàng
-            </div>
-          )}
-
-          <img
-            src={image}
-            alt={name}
-            className="card-img-top bg-white"
-            height="220"
-            style={{
-              objectFit: "contain",
-            }}
-          />
-
-        </Link>
-
-        <div className="card-body d-flex flex-column">
-
-          <h5
-            className="card-title"
-            title={name}
-          >
-            {name}
-          </h5>
-
-          <small className="text-muted">
-
-            {brand}
-
-          </small>
-
-          <small className="text-muted mb-2">
-
-            {category}
-
-          </small>
-
-          <div className="mb-2">
-
-            ⭐ {average_rating ?? 0}
-
-            <small className="text-muted">
-
-              {" "}
-              ({review_count ?? 0} đánh giá)
-
-            </small>
-
-          </div>
-
-          <div className="mb-2">
-
-            {percent_off > 0 && (
-              <div>
-
-                <del className="text-muted">
-
-                  {formatPrice(price)}
-
-                </del>
-
-              </div>
-            )}
-
-            <div className="text-danger fw-bold fs-5">
-
-              {formatPrice(finalPrice)}
-
-            </div>
-
-          </div>
-
-          <div className="mb-3">
-
-            {inStock ? (
-              <span className="text-success">
-
-                Còn {stock_quantity} sản phẩm
-
-              </span>
-            ) : (
-              <span className="text-danger">
-
-                Hết hàng
-
-              </span>
-            )}
-
-          </div>
-
-          <div className="mt-auto">
-
-            <button
-              className="btn btn-dark w-100"
-              disabled={!inStock}
-              onClick={handleAddToCart}
-            >
-              <FontAwesomeIcon icon={["fas", "cart-plus"]} />
-
-              {" "}Thêm vào giỏ
-            </button>
-
-          </div>
-
+      <div className="product-card-body">
+        <div className="product-card-meta">
+          <span>{data.brand || "ElectroShop"}</span>
+          <strong>{data.categoryName || data.category || "Công nghệ"}</strong>
         </div>
 
+        <Link to={`/products/${productId}`} className="product-card-title-link">
+          <h3 className="product-card-title">{data.name}</h3>
+        </Link>
+
+        <div className="product-rating-row">
+          <span>
+            <FontAwesomeIcon icon={["fas", "star"]} />
+            {rating.toFixed(1)}
+          </span>
+          <small>{reviewCount} đánh giá</small>
+        </div>
+
+        <div className="product-price-row">
+          <strong>{formatPrice(data.price)}</strong>
+        </div>
+
+        <div className="product-card-actions product-card-actions--three">
+          <Link
+            to={`/products/${productId}`}
+            className="product-card-detail-btn"
+          >
+            Chi tiết
+          </Link>
+
+          <button
+            type="button"
+            className="product-card-btn product-card-btn--cart"
+            onClick={() => handleCartAction("cart")}
+            disabled={stock <= 0 || Boolean(actionLoading)}
+            title="Thêm vào giỏ"
+          >
+            <FontAwesomeIcon icon={["fas", "cart-plus"]} />
+            <span>
+              {actionLoading === "cart" ? "Đang thêm..." : "Thêm giỏ"}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className="product-card-btn product-card-btn--buy"
+            onClick={() => handleCartAction("buy")}
+            disabled={stock <= 0 || Boolean(actionLoading)}
+          >
+            {actionLoading === "buy" ? "Đang xử lý..." : "Mua ngay"}
+          </button>
+        </div>
       </div>
-    </div>
+    </article>
   );
 }
 

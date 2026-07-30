@@ -1,124 +1,163 @@
-﻿import React, { createContext, useState, useContext, useEffect } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
+const API_BASE = (
+  process.env.REACT_APP_API_URL || "http://localhost:3001/api"
+).replace(/\/$/, "");
+
+async function readJson(response) {
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const message = Array.isArray(data.message)
+      ? data.message.join(", ")
+      : data.message || "Yêu cầu không thành công";
+
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [sessionLoading, setSessionLoading] = useState(true);
 
-  // Load token từ localStorage khi component mount
-  useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+  const refreshSession = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE}/auth/me`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (response.status === 401) {
+        setUser(null);
+        return null;
+      }
+
+      const data = await readJson(response);
+
+      setUser(data.user || null);
+
+      return data.user || null;
+    } catch (error) {
+      console.error("Không thể kiểm tra phiên đăng nhập:", error);
+
+      setUser(null);
+
+      return null;
+    } finally {
+      setSessionLoading(false);
     }
   }, []);
 
-  const login = async (email, password) => {
-    setLoading(true);
-    setError('');
-    try {
-      const response = await fetch('/auth/login', {
-        method: 'POST',
+  useEffect(() => {
+    refreshSession();
+  }, [refreshSession]);
+
+  const login = useCallback(
+    async ({ email, password, rememberMe }) => {
+      const response = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        credentials: "include",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          rememberMe: Boolean(rememberMe),
+        }),
       });
 
-      const data = await response.json();
+      const data = await readJson(response);
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
+      setUser(data.user || null);
 
-      setToken(data.token);
-      setUser(data.user);
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      return data;
+    },
+    [],
+  );
 
-      return { success: true };
-    } catch (err) {
-      setError(err.message);
-      return { success: false, error: err.message };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const register = async (name, email, password, confirmPassword) => {
-    setLoading(true);
-    setError('');
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
-      return { success: false, error: 'Passwords do not match' };
-    }
-
-    try {
-      const response = await fetch('/auth/register', {
-        method: 'POST',
+  const register = useCallback(
+    async ({ name, email, phone, password }) => {
+      const response = await fetch(`${API_BASE}/auth/register`, {
+        method: "POST",
+        credentials: "include",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({
+          name,
+          email,
+          phone,
+          password,
+        }),
       });
 
-      const data = await response.json();
+      const data = await readJson(response);
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
+      setUser(data.user || null);
 
-      setToken(data.token);
-      setUser(data.user);
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      return data;
+    },
+    [],
+  );
 
-      return { success: true };
-    } catch (err) {
-      setError(err.message);
-      return { success: false, error: err.message };
+  const logout = useCallback(async () => {
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
     } finally {
-      setLoading(false);
+      setUser(null);
     }
-  };
+  }, []);
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    setError('');
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-  };
-
-  const value = {
-    user,
-    token,
-    loading,
-    error,
-    login,
-    register,
-    logout,
-    isAuthenticated: !!token,
-  };
+  const value = useMemo(
+    () => ({
+      user,
+      sessionLoading,
+      isAuthenticated: Boolean(user),
+      login,
+      register,
+      logout,
+      refreshSession,
+    }),
+    [
+      user,
+      sessionLoading,
+      login,
+      register,
+      logout,
+      refreshSession,
+    ],
+  );
 
   return (
     <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
+
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error(
+      "useAuth phải được dùng bên trong AuthProvider",
+    );
   }
+
   return context;
-};
+}

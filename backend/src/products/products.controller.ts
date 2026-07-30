@@ -1,44 +1,82 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  DefaultValuePipe,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { CatalogQueryDto } from './dto/catalog-query.dto';
+import { ProductCatalogService } from './product-catalog.service';
 import { ProductsService } from './products.service';
 
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly productCatalogService: ProductCatalogService,
+  ) {}
 
+  // Giữ endpoint cũ để Landing và các màn hình hiện tại không bị hỏng.
   @Get()
   async getAllProducts() {
-    return await this.productsService.findAll();
+    return this.productsService.findAll();
   }
 
-  // Chi tiet 1 san pham - ProductDetail.jsx goi endpoint nay
-  @Get(':id')
-  async getProductDetail(@Param('id') id: string) {
-    return await this.productsService.findOne(Number(id));
+  // Phân trang/lọc/sắp xếp tại backend.
+  // GET /api/products/catalog?page=1&limit=12&category=laptop
+  @Get('catalog')
+  async getCatalog(@Query() query: CatalogQueryDto) {
+    return this.productCatalogService.findCatalog(query);
   }
 
-  // GHI NHAT KY XEM
-  @Post('log-view')
-  async logProductView(@Body() body: { userId: number; productId: number }) {
-    return await this.productsService.logView(body.userId, body.productId);
+  // Top bán chạy thật, chỉ tính đơn DELIVERED.
+  // Phải đặt trước @Get(':id').
+  @Get('top-selling')
+  async getTopSellingProducts(
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe)
+    limit: number,
+  ) {
+    return this.productCatalogService.getTopSelling(limit);
   }
 
   @Get('recommend/:id')
-  async getRecommendations(@Param('id') id: string) {
-    return await this.productsService.getRecommendedProducts(Number(id));
+  async getRecommendations(
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.productsService.getRecommendedProducts(id);
   }
-
-  // ===================== REVIEWS =====================
 
   @Get(':id/reviews')
-  async getProductReviews(@Param('id') id: string) {
-    return await this.productsService.getReviews(Number(id));
+  async getProductReviews(
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.productsService.getReviews(id);
   }
 
-  // TODO: khi ban gan JWT auth guard vao du an, thay body.userId bang
-  // userId lay tu @Req() req.user.userId de tranh client tu xung la ai cung duoc.
+  // Route động luôn để sau các route GET cụ thể.
+  @Get(':id')
+  async getProductDetail(
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.productsService.findOne(id);
+  }
+
+  @Post('log-view')
+  async logProductView(
+    @Body() body: { userId: number; productId: number },
+  ) {
+    return this.productsService.logView(
+      Number(body.userId),
+      Number(body.productId),
+    );
+  }
+
   @Post(':id/reviews')
   async createProductReview(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body()
     body: {
       userId: number;
@@ -48,13 +86,13 @@ export class ProductsController {
       orderId?: number;
     },
   ) {
-    return await this.productsService.createReview(
-      Number(id),
-      body.userId,
-      body.rating,
-      body.title ?? '',
-      body.content ?? '',
-      body.orderId ?? null,
+    return this.productsService.createReview(
+      id,
+      Number(body.userId),
+      Number(body.rating),
+      body.title?.trim() ?? '',
+      body.content?.trim() ?? '',
+      body.orderId ? Number(body.orderId) : null,
     );
   }
 }

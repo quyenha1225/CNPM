@@ -1,150 +1,127 @@
-import {
-  Link,
-  useLocation,
-} from "react-router-dom";
-import {
-  useEffect,
-  useState,
-} from "react";
+import { useMemo } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Link, useLocation } from "react-router-dom";
+
+const formatPrice = (value) =>
+  new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0));
 
 function AiSearchResult() {
   const location = useLocation();
 
-  const [data, setData] = useState(null);
-
-  useEffect(() => {
-    if (location.state?.aiSearchResult) {
-      setData(location.state.aiSearchResult);
-      return;
+  const result = useMemo(() => {
+    if (location.state?.result) {
+      return location.state.result;
     }
 
     try {
-      const savedResult =
-        sessionStorage.getItem("aiSearchResult");
-
-      setData(
-        savedResult
-          ? JSON.parse(savedResult)
-          : null
-      );
+      return JSON.parse(sessionStorage.getItem("aiSearchResult") || "null");
     } catch {
-      setData(null);
+      return null;
     }
-  }, [location.key, location.search, location.state]);
+  }, [location.state]);
 
-  if (!data) {
+  const products = Array.isArray(result?.products) ? result.products : [];
+
+  if (!result) {
     return (
-      <div className="container ai-search-page text-center">
-        <h2>Chưa có kết quả tìm kiếm AI</h2>
-
-        <p>
-          Hãy nhập nhu cầu của bạn vào thanh tìm kiếm.
-        </p>
-
-        <Link
-          to="/"
-          className="btn btn-primary"
-        >
-          Quay lại trang chủ
-        </Link>
-      </div>
+      <main className="ai-result-page">
+        <div className="container">
+          <div className="ai-empty-state">
+            <FontAwesomeIcon icon={["fas", "robot"]} />
+            <h1>Chưa có kết quả AI Search</h1>
+            <p>Hãy nhập nhu cầu ở ô tìm kiếm AI trên thanh đầu trang.</p>
+            <Link to="/products">Khám phá sản phẩm</Link>
+          </div>
+        </div>
+      </main>
     );
   }
 
   return (
-    <div className="container ai-search-page">
-      <div className="ai-search-summary">
-        <h2>Kết quả tìm kiếm AI</h2>
+    <main className="ai-result-page">
+      <section className="ai-result-hero">
+        <div className="container">
+          <span className="ai-result-kicker">
+            <FontAwesomeIcon icon={["fas", "magic"]} />
+            AI Product Consultant
+          </span>
+          <h1>Kết quả tư vấn sản phẩm</h1>
+          <p className="ai-result-query">
+            “{result.query || location.state?.query}”
+          </p>
 
-        <p>
-          <strong>Yêu cầu:</strong>{" "}
-          {data.query}
-        </p>
+          <div className="ai-result-message">
+            <FontAwesomeIcon icon={["fas", "robot"]} />
+            <p>{result.message || "Đây là các sản phẩm phù hợp nhất."}</p>
+          </div>
 
-        <p>{data.message}</p>
+          <div className="ai-result-meta">
+            <span>
+              <FontAwesomeIcon icon={["fas", "database"]} />
+              {products.length} kết quả từ database
+            </span>
+            <span>
+              <FontAwesomeIcon icon={["fas", "brain"]} />
+              Gemini có fallback rule-based
+            </span>
+            {result.logId && (
+              <span>
+                <FontAwesomeIcon icon={["fas", "history"]} />
+                Mã tìm kiếm #{result.logId}
+              </span>
+            )}
+          </div>
+        </div>
+      </section>
 
-        {data.exactBudgetMatch === false && (
-          <div className="alert alert-warning">
-            Không có sản phẩm đúng hoàn toàn
-            ngân sách. Hệ thống đang hiển thị
-            lựa chọn gần nhất.
+      <section className="container ai-result-content">
+        {products.length ? (
+          <div className="ai-result-grid">
+            {products.map((product, index) => {
+              const id = product.id || product.productId || product.product_id;
+              const image =
+                product.image ||
+                product.image_url ||
+                "https://via.placeholder.com/600x450?text=ElectroShop";
+
+              return (
+                <article className="ai-product-card" key={`${id}-${index}`}>
+                  <Link to={`/products/${id}`} className="ai-product-media">
+                    <img src={image} alt={product.name || product.product_name} />
+                    <span>#{index + 1} phù hợp</span>
+                  </Link>
+
+                  <div className="ai-product-body">
+                    <small>
+                      {product.brand || product.brand_name || "ElectroShop"}
+                    </small>
+                    <h2>{product.name || product.product_name}</h2>
+                    <p>
+                      {product.reason ||
+                        product.matchReason ||
+                        "Phù hợp với nhu cầu tìm kiếm đã mô tả."}
+                    </p>
+                    <strong>
+                      {formatPrice(product.price || product.base_price)}
+                    </strong>
+                    <Link to={`/products/${id}`}>Xem chi tiết</Link>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="ai-empty-state">
+            <h2>AI chưa tìm thấy sản phẩm phù hợp</h2>
+            <p>Hãy mô tả rõ ngân sách, mục đích sử dụng và loại sản phẩm.</p>
           </div>
         )}
-      </div>
-
-      {data.products?.length > 0 ? (
-        <div className="row">
-          {data.products.map((product) => (
-            <div
-              key={product.productId}
-              className="col-lg-4 col-md-6 mb-4"
-            >
-              <div className="ai-search-card">
-                {product.imageUrl && (
-                  <img
-                    src={product.imageUrl}
-                    alt={product.productName}
-                    className="ai-search-card-image"
-                  />
-                )}
-
-                <div className="ai-search-card-body">
-                  <h5 className="ai-search-card-title">
-                    {product.productName}
-                  </h5>
-
-                  <p className="ai-search-price">
-                    {Number(
-                      product.price
-                    ).toLocaleString("vi-VN")}
-                    đ
-                  </p>
-
-                  <p>
-                    <strong>Danh mục:</strong>{" "}
-                    {product.category}
-                  </p>
-
-                  <p>
-                    <strong>Tồn kho:</strong>{" "}
-                    {product.stockQuantity}
-                  </p>
-
-                  <div className="ai-search-score">
-                    Phù hợp {product.matchScore}%
-                  </div>
-
-                  {product.matchReasons?.length > 0 && (
-                    <ul className="ai-search-reasons">
-                      {product.matchReasons.map(
-                        (reason, index) => (
-                          <li
-                            key={`${product.productId}-${index}`}
-                          >
-                            {reason}
-                          </li>
-                        )
-                      )}
-                    </ul>
-                  )}
-
-                  <Link
-                    to={`/products/${product.productId}`}
-                    className="btn btn-primary ai-search-detail-button"
-                  >
-                    Xem chi tiết
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="alert alert-warning">
-          Không tìm thấy sản phẩm phù hợp.
-        </div>
-      )}
-    </div>
+      </section>
+    </main>
   );
 }
 

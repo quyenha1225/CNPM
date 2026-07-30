@@ -1,18 +1,49 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import cookieParser from 'cookie-parser';
+
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Bật CORS cho phép Frontend kết nối
+  app.use(cookieParser());
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }),
+  );
+
   app.enableCors({
-    origin: 'http://localhost:3000', // Điền URL chạy ReactJS của bạn vào đây
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true,
+    methods: [
+      'GET',
+      'POST',
+      'PUT',
+      'PATCH',
+      'DELETE',
+      'OPTIONS',
+    ],
   });
 
-  // Chạy backend ở port 3001 để tránh trùng với ReactJS
   app.setGlobalPrefix('api');
-  await app.listen(3001);
-  console.log(`Application is running on: ${await app.getUrl()}`);
+
+  const port = Number(process.env.PORT || 3001);
+
+  await app.listen(port);
+
+  console.log(
+    `Application is running on: http://localhost:${port}/api`,
+  );
 }
-bootstrap();
+
+bootstrap().catch((error) => {
+  console.error('Không thể khởi động backend:', error);
+  process.exit(1);
+});

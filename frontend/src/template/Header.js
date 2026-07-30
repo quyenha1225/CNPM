@@ -1,64 +1,136 @@
-import { Link, useNavigate } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useRef, useState } from "react";
+import {
+  Link,
+  NavLink,
+  useNavigate,
+} from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
+import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import logo from "../quyen-pc-logo.png";
-import "../index.css";
-const categoryMap = {
-  laptop: "laptop",
-  "dien-thoai": "dien-thoai",
-  "phu-kien": "phu-kien",
-  "linh-kien-pc": "linh-kien-pc",
-  "man-hinh": "man-hinh",
-};
 
-function Header({ setCategory = () => {}, setBrand = () => {} }) {
+const API_BASE =
+  process.env.REACT_APP_API_URL || "http://localhost:3001/api";
+
+const categories = [
+  {
+    id: "dien-thoai",
+    label: "Điện thoại",
+    icon: "mobile-alt",
+  },
+  {
+    id: "laptop",
+    label: "Laptop",
+    icon: "laptop",
+  },
+  {
+    id: "phu-kien",
+    label: "Phụ kiện",
+    icon: "keyboard",
+  },
+  {
+    id: "linh-kien-pc",
+    label: "Linh kiện PC",
+    icon: "microchip",
+  },
+  {
+    id: "man-hinh",
+    label: "Màn hình",
+    icon: "tv",
+  },
+];
+
+function getUserDisplayName(user) {
+  const name =
+    user?.name ||
+    user?.fullName ||
+    user?.user_full_name ||
+    user?.userFullName ||
+    "";
+
+  if (name.trim()) {
+    const parts = name.trim().split(/\s+/);
+    return parts.slice(-2).join(" ");
+  }
+
+  return user?.email || user?.user_email || "Tài khoản";
+}
+
+function Header({
+  setCategory = () => {},
+  setBrand = () => {},
+}) {
   const navigate = useNavigate();
-  const { getTotalItems, cartItems } = useCart();
+  const categoryRef = useRef(null);
+  const accountRef = useRef(null);
+  const searchInputRef = useRef(null);
 
+  const auth = useAuth();
+  const { cartItems, getTotalItems } = useCart();
+
+  const user = auth?.user || null;
+  const isAuthenticated =
+    typeof auth?.isAuthenticated === "boolean"
+      ? auth.isAuthenticated
+      : Boolean(user || auth?.token);
+  const authLoading = Boolean(
+    auth?.sessionLoading ?? auth?.loading ?? false
+  );
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchError, setSearchError] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState("");
-
-  const categoryDropdownRef = useRef(null);
+  useEffect(() => {
+    try {
+      setCartCount(Number(getTotalItems?.() || 0));
+    } catch {
+      setCartCount(0);
+    }
+  }, [cartItems, getTotalItems]);
 
   useEffect(() => {
-    function closeCategoryMenu(event) {
+    function handlePointerDown(event) {
       if (
-        categoryDropdownRef.current &&
-        !categoryDropdownRef.current.contains(event.target)
+        categoryRef.current &&
+        !categoryRef.current.contains(event.target)
       ) {
         setIsCategoryOpen(false);
       }
+
+      if (
+        accountRef.current &&
+        !accountRef.current.contains(event.target)
+      ) {
+        setIsAccountOpen(false);
+      }
     }
 
-    function closeCategoryMenuOnEscape(event) {
+    function handleKeyDown(event) {
       if (event.key === "Escape") {
         setIsCategoryOpen(false);
+        setIsAccountOpen(false);
         setIsNavOpen(false);
       }
     }
 
-    document.addEventListener("mousedown", closeCategoryMenu);
-    document.addEventListener("keydown", closeCategoryMenuOnEscape);
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.removeEventListener("mousedown", closeCategoryMenu);
-      document.removeEventListener("keydown", closeCategoryMenuOnEscape);
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
 
-  useEffect(() => {
-    setCartCount(getTotalItems());
-  }, [cartItems, getTotalItems]);
-
   function closeMenus() {
     setIsCategoryOpen(false);
+    setIsAccountOpen(false);
     setIsNavOpen(false);
   }
 
@@ -68,8 +140,8 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
     closeMenus();
   }
 
-  function applyCategory(category) {
-    setCategory(category);
+  function applyCategory(categoryId) {
+    setCategory(categoryId);
     setBrand("");
     closeMenus();
   }
@@ -79,50 +151,69 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
 
     const query = searchQuery.trim();
 
-    if (!query) {
-      setSearchError("Bạn hãy nhập nội dung cần tìm.");
+    if (query.length < 2) {
+      setSearchError(
+        "Hãy mô tả sản phẩm cần tìm bằng ít nhất 2 ký tự."
+      );
+      searchInputRef.current?.focus();
       return;
     }
 
+    setSearchError("");
+    setIsSearching(true);
+
     try {
-      setIsSearching(true);
-      setSearchError("");
+      const customerId =
+        user?.id ??
+        user?.userId ??
+        user?.user_id ??
+        null;
 
-      const response = await fetch(
-        "http://localhost:3001/api/ai/search",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            query,
-            limit: 10,
-          }),
-        }
-      );
+      const requestBody = {
+        query,
+        limit: 10,
+      };
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.detail ||
-            data.message ||
-            "Không thể tìm kiếm sản phẩm."
-        );
+      if (customerId) {
+        requestBody.customerId = Number(customerId);
       }
 
-sessionStorage.setItem(
-  "aiSearchResult",
-  JSON.stringify(data)
-);
+      const response = await fetch(`${API_BASE}/ai/search`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
 
-navigate(`/ai-search?search=${Date.now()}`, {
-  replace: true,
-  state: {
-    aiSearchResult: data,
-  },
-});
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const message = Array.isArray(data.message)
+          ? data.message.join(", ")
+          : data.detail ||
+            data.message ||
+            "AI Search chưa thể xử lý yêu cầu.";
+
+        throw new Error(message);
+      }
+
+      sessionStorage.setItem(
+        "aiSearchResult",
+        JSON.stringify(data)
+      );
+
+      navigate(`/ai-search?search=${Date.now()}`, {
+        replace: true,
+        state: {
+          aiSearchResult: data,
+          result: data,
+          query,
+        },
+      });
+
+      closeMenus();
     } catch (error) {
       setSearchError(
         error instanceof Error
@@ -134,39 +225,91 @@ navigate(`/ai-search?search=${Date.now()}`, {
     }
   }
 
+  async function handleLogout() {
+    try {
+      await Promise.resolve(auth?.logout?.());
+    } finally {
+      closeMenus();
+      navigate("/");
+    }
+  }
+
+  const navClassName = ({ isActive }) =>
+    `gx-header__nav-link ${isActive ? "is-active" : ""}`;
+
   return (
-    <header className="eshop-header">
-      <div className="eshop-topbar">
-        <div className="container-fluid eshop-header-inner">
+    <header
+      className={`gx-header ${
+        isNavOpen ? "is-mobile-open" : ""
+      }`}
+    >
+      <div className="gx-header__visual" aria-hidden="true">
+        <span className="gx-header__orb gx-header__orb--one" />
+        <span className="gx-header__orb gx-header__orb--two" />
+        <span className="gx-header__scan" />
+      </div>
+
+      <div className="gx-header__ticker">
+        <div className="gx-header__ticker-track">
+          <span>
+            <b>AI Search</b> tư vấn cấu hình theo đúng nhu cầu
+          </span>
+          <span>
+            <b>Dữ liệu thật</b> đồng bộ từ sản phẩm và đơn hàng
+          </span>
+          <span>
+            <b>Gearxin</b> công nghệ chính hãng, hỗ trợ tận tâm
+          </span>
+          <span aria-hidden="true">
+            <b>AI Search</b> tư vấn cấu hình theo đúng nhu cầu
+          </span>
+          <span aria-hidden="true">
+            <b>Dữ liệu thật</b> đồng bộ từ sản phẩm và đơn hàng
+          </span>
+          <span aria-hidden="true">
+            <b>Gearxin</b> công nghệ chính hãng, hỗ trợ tận tâm
+          </span>
+        </div>
+      </div>
+
+      <div className="gx-header__main">
+        <div className="container-fluid gx-header__main-inner">
           <Link
             to="/"
-            className="eshop-logo"
-            aria-label="Gearxin - Trang chủ"
+            className="gx-header__brand"
             onClick={closeMenus}
+            aria-label="Gearxin - Trang chủ"
           >
-            <img
-              className="eshop-logo-image"
-              src={logo}
-              alt="Gearxin"
-            />
+            <span className="gx-header__brand-logo">
+              <img src={logo} alt="Gearxin" />
+            </span>
+            <span className="gx-header__brand-copy">
+              <strong>GEARXIN</strong>
+              <small>Technology Store</small>
+            </span>
           </Link>
 
-          <div className="eshop-search-wrapper">
+          <div className="gx-header__search-area">
             <form
-              className="eshop-search"
+              className="gx-header__search"
               onSubmit={handleAiSearch}
             >
+              <span className="gx-header__ai-label">
+                <FontAwesomeIcon icon={["fas", "robot"]} />
+                AI
+              </span>
+
               <input
-                type="text"
+                ref={searchInputRef}
+                type="search"
                 value={searchQuery}
                 onChange={(event) => {
                   setSearchQuery(event.target.value);
-
                   if (searchError) {
                     setSearchError("");
                   }
                 }}
-                placeholder="Mô tả sản phẩm bạn cần..."
+                placeholder="Ví dụ: laptop học IT dưới 20 triệu, RAM 16GB..."
                 aria-label="Tìm kiếm sản phẩm bằng AI"
                 disabled={isSearching}
               />
@@ -176,250 +319,301 @@ navigate(`/ai-search?search=${Date.now()}`, {
                 disabled={isSearching}
                 aria-label={
                   isSearching
-                    ? "Đang tìm kiếm"
+                    ? "AI đang phân tích"
                     : "Tìm kiếm bằng AI"
                 }
               >
-                {isSearching ? (
-                  <span className="eshop-search-loading">
-                    ...
-                  </span>
-                ) : (
-                  <FontAwesomeIcon
-                    icon={["fas", "search"]}
-                  />
-                )}
+                <FontAwesomeIcon
+                  icon={["fas", isSearching ? "spinner" : "search"]}
+                  spin={isSearching}
+                />
+                <span>
+                  {isSearching ? "Đang phân tích" : "Tìm kiếm"}
+                </span>
               </button>
             </form>
 
             {searchError && (
-              <div className="eshop-search-error">
+              <div
+                className="gx-header__search-error"
+                role="alert"
+              >
                 {searchError}
               </div>
             )}
           </div>
 
-          <div className="eshop-actions">
+          <div className="gx-header__actions">
             <Link
               to="/contact"
-              className="eshop-action-item"
+              className="gx-header__action"
               onClick={closeMenus}
             >
-              <FontAwesomeIcon
-                icon={["fas", "phone-alt"]}
-              />
-              <span>Liên hệ</span>
+              <span className="gx-header__action-icon">
+                <FontAwesomeIcon icon={["fas", "phone-alt"]} />
+              </span>
+              <span className="gx-header__action-copy">
+                <small>Hỗ trợ</small>
+                <strong>Liên hệ</strong>
+              </span>
             </Link>
 
             <Link
               to="/cart"
-              className="eshop-action-item"
+              className="gx-header__action gx-header__cart"
               onClick={closeMenus}
             >
-              <FontAwesomeIcon
-                icon={["fas", "shopping-cart"]}
-              />
-              <span>Giỏ hàng ({cartCount})</span>
+              <span className="gx-header__action-icon">
+                <FontAwesomeIcon
+                  icon={["fas", "shopping-cart"]}
+                />
+                <b>{cartCount}</b>
+              </span>
+              <span className="gx-header__action-copy">
+                <small>Sản phẩm</small>
+                <strong>Giỏ hàng</strong>
+              </span>
             </Link>
 
-            <Link
-              to="/login"
-              className="eshop-user-btn"
-              onClick={closeMenus}
+            <div
+              ref={accountRef}
+              className="gx-header__account"
+            >
+              <button
+                type="button"
+                className="gx-header__account-trigger"
+                onClick={() => {
+                  setIsAccountOpen((value) => !value);
+                  setIsCategoryOpen(false);
+                }}
+                disabled={authLoading}
+                aria-expanded={isAccountOpen}
+              >
+                <span className="gx-header__avatar">
+                  <FontAwesomeIcon icon={["fas", "user-alt"]} />
+                </span>
+                <span className="gx-header__account-copy">
+                  <small>
+                    {isAuthenticated ? "Xin chào" : "Tài khoản"}
+                  </small>
+                  <strong>
+                    {authLoading
+                      ? "Đang tải..."
+                      : isAuthenticated
+                        ? getUserDisplayName(user)
+                        : "Đăng nhập"}
+                  </strong>
+                </span>
+                <FontAwesomeIcon
+                  className="gx-header__account-chevron"
+                  icon={["fas", "chevron-down"]}
+                />
+              </button>
+
+              {isAccountOpen && (
+                <div className="gx-header__account-menu">
+                  {isAuthenticated ? (
+                    <>
+                      <div className="gx-header__account-summary">
+                        <strong>
+                          {getUserDisplayName(user)}
+                        </strong>
+                        <small>
+                          {user?.email ||
+                            user?.user_email ||
+                            "Tài khoản Gearxin"}
+                        </small>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                      >
+                        <FontAwesomeIcon
+                          icon={["fas", "sign-out-alt"]}
+                        />
+                        Đăng xuất
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        to="/login"
+                        onClick={closeMenus}
+                      >
+                        <FontAwesomeIcon
+                          icon={["fas", "sign-in-alt"]}
+                        />
+                        Đăng nhập
+                      </Link>
+
+                      <Link
+                        to="/register"
+                        onClick={closeMenus}
+                      >
+                        <FontAwesomeIcon
+                          icon={["fas", "user-plus"]}
+                        />
+                        Tạo tài khoản
+                      </Link>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              className="gx-header__mobile-toggle"
+              onClick={() => {
+                setIsNavOpen((value) => !value);
+                setIsCategoryOpen(false);
+                setIsAccountOpen(false);
+              }}
+              aria-label={
+                isNavOpen
+                  ? "Đóng menu điều hướng"
+                  : "Mở menu điều hướng"
+              }
+              aria-expanded={isNavOpen}
             >
               <FontAwesomeIcon
-                icon={["fas", "user-alt"]}
+                icon={["fas", isNavOpen ? "times" : "bars"]}
               />
-              <span>Tài khoản</span>
-            </Link>
+            </button>
           </div>
-
-          <button
-            type="button"
-            className="eshop-mobile-menu-btn"
-            aria-label={
-              isNavOpen
-                ? "Đóng menu điều hướng"
-                : "Mở menu điều hướng"
-            }
-            aria-controls="eshop-main-navigation"
-            aria-expanded={isNavOpen}
-            onClick={() => {
-              setIsNavOpen((isOpen) => !isOpen);
-              setIsCategoryOpen(false);
-            }}
-          >
-            <FontAwesomeIcon
-              icon={["fas", isNavOpen ? "times" : "bars"]}
-            />
-          </button>
         </div>
       </div>
 
-      <nav
-        id="eshop-main-navigation"
-        className={
-          "eshop-nav " + (isNavOpen ? "is-open" : "")
-        }
-      >
-        <div className="container eshop-nav-inner">
+      <nav className="gx-header__nav">
+        <div className="container gx-header__nav-inner">
           <div
-            ref={categoryDropdownRef}
-            className={
-              "eshop-category-dropdown " +
-              (isCategoryOpen ? "is-open" : "")
-            }
+            ref={categoryRef}
+            className={`gx-header__category ${
+              isCategoryOpen ? "is-open" : ""
+            }`}
           >
             <button
               type="button"
-              className="eshop-category-btn"
-              aria-haspopup="true"
+              className="gx-header__category-trigger"
+              onClick={() => {
+                setIsCategoryOpen((value) => !value);
+                setIsAccountOpen(false);
+              }}
               aria-expanded={isCategoryOpen}
-              onClick={() =>
-                setIsCategoryOpen((isOpen) => !isOpen)
-              }
             >
               <FontAwesomeIcon icon={["fas", "bars"]} />
-              <span>Danh mục</span>
-
+              <span>Danh mục sản phẩm</span>
               <FontAwesomeIcon
+                className="gx-header__category-chevron"
                 icon={["fas", "chevron-down"]}
-                className="eshop-category-chevron"
               />
             </button>
 
-            <div className="eshop-category-menu">
+            <div className="gx-header__category-menu">
               <Link
                 to="/products"
                 onClick={resetProductFilters}
               >
-                Tất cả sản phẩm
+                <span>
+                  <FontAwesomeIcon icon={["fas", "th-large"]} />
+                </span>
+                <div>
+                  <strong>Tất cả sản phẩm</strong>
+                  <small>Khám phá toàn bộ cửa hàng</small>
+                </div>
               </Link>
 
-              <Link
-                to="/category/dien-thoai"
-                onClick={() =>
-                  applyCategory(
-                    categoryMap["dien-thoai"]
-                  )
-                }
-              >
-                Điện thoại
-              </Link>
-
-              <Link
-                to="/category/laptop"
-                onClick={() =>
-                  applyCategory(categoryMap.laptop)
-                }
-              >
-                Laptop
-              </Link>
-
-              <Link
-                to="/category/phu-kien"
-                onClick={() =>
-                  applyCategory(
-                    categoryMap["phu-kien"]
-                  )
-                }
-              >
-                Phụ kiện
-              </Link>
-
-              <Link
-                to="/category/linh-kien-pc"
-                onClick={() =>
-                  applyCategory(
-                    categoryMap["linh-kien-pc"]
-                  )
-                }
-              >
-                Linh kiện PC
-              </Link>
-
-              <Link
-                to="/category/man-hinh"
-                onClick={() =>
-                  applyCategory(
-                    categoryMap["man-hinh"]
-                  )
-                }
-              >
-                Màn hình
-              </Link>
+              {categories.map((category) => (
+                <Link
+                  key={category.id}
+                  to={`/category/${category.id}`}
+                  onClick={() => applyCategory(category.id)}
+                >
+                  <span>
+                    <FontAwesomeIcon
+                      icon={["fas", category.icon]}
+                    />
+                  </span>
+                  <div>
+                    <strong>{category.label}</strong>
+                    <small>
+                      Sản phẩm {category.label.toLowerCase()}
+                    </small>
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
 
-          <Link to="/" onClick={closeMenus}>
-            Trang chủ
-          </Link>
+          <div className="gx-header__nav-links">
+            <NavLink
+              to="/"
+              end
+              className={navClassName}
+              onClick={closeMenus}
+            >
+              Trang chủ
+            </NavLink>
 
-          <Link
-            to="/products"
-            onClick={resetProductFilters}
-          >
-            Sản phẩm
-          </Link>
+            <NavLink
+              to="/products"
+              className={navClassName}
+              onClick={resetProductFilters}
+            >
+              Sản phẩm
+            </NavLink>
 
-          <Link
-            to="/category/laptop"
-            onClick={() =>
-              applyCategory(categoryMap.laptop)
-            }
-          >
-            Laptop
-          </Link>
+            <NavLink
+              to="/category/laptop"
+              className={navClassName}
+              onClick={() => applyCategory("laptop")}
+            >
+              Laptop
+            </NavLink>
 
-          <Link
-            to="/category/dien-thoai"
-            onClick={() =>
-              applyCategory(
-                categoryMap["dien-thoai"]
-              )
-            }
-          >
-            Điện thoại
-          </Link>
+            <NavLink
+              to="/category/dien-thoai"
+              className={navClassName}
+              onClick={() => applyCategory("dien-thoai")}
+            >
+              Điện thoại
+            </NavLink>
 
-          <Link
-            to="/category/phu-kien"
-            onClick={() =>
-              applyCategory(
-                categoryMap["phu-kien"]
-              )
-            }
-          >
-            Phụ kiện
-          </Link>
+            <NavLink
+              to="/category/phu-kien"
+              className={navClassName}
+              onClick={() => applyCategory("phu-kien")}
+            >
+              Phụ kiện
+            </NavLink>
 
-          <Link to="/about" onClick={closeMenus}>
-            Giới thiệu
-          </Link>
+            <NavLink
+              to="/about"
+              className={navClassName}
+              onClick={closeMenus}
+            >
+              Giới thiệu
+            </NavLink>
 
-          <Link
-            to="/contact"
-            className="eshop-nav-mobile-link"
-            onClick={closeMenus}
-          >
-            Liên hệ
-          </Link>
+            <NavLink
+              to="/ai-search"
+              className={({ isActive }) =>
+                `gx-header__nav-link gx-header__nav-ai ${
+                  isActive ? "is-active" : ""
+                }`
+              }
+              onClick={closeMenus}
+            >
+              <FontAwesomeIcon icon={["fas", "robot"]} />
+              AI Search
+            </NavLink>
+          </div>
 
-          <Link
-            to="/cart"
-            className="eshop-nav-mobile-link"
-            onClick={closeMenus}
-          >
-            Giỏ hàng ({cartCount})
-          </Link>
-
-          <Link
-            to="/login"
-            className="eshop-nav-mobile-link"
-            onClick={closeMenus}
-          >
-            Tài khoản
-          </Link>
+          <div className="gx-header__nav-trust">
+            <span />
+            Hệ thống đang hoạt động
+          </div>
         </div>
       </nav>
     </header>

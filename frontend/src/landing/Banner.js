@@ -1,147 +1,415 @@
-import BannerZero from "./banner-0.jpg";
-import BannerOne from "./banner-1.jpg";
-import BannerTwo from "./banner-2.jpg";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
-const banners = [
-  {
-    image: BannerZero,
-    title: "PC gaming, laptop và linh kiện chính hãng",
-    text: "Chọn nhanh cấu hình phù hợp cho học tập, làm việc và giải trí với mức giá rõ ràng.",
-    kicker: "Gearxin PC",
-    action: "Xem sản phẩm",
-    to: "/products",
-  },
-  {
-    image: BannerOne,
-    title: "Laptop mỏng nhẹ cho học tập và văn phòng",
-    text: "Các mẫu laptop phổ biến, dễ chọn, phù hợp nhu cầu đi học, đi làm và di chuyển mỗi ngày.",
-    kicker: "Laptop nổi bật",
-    action: "Xem laptop",
-    to: "/category/laptop",
-  },
-  {
-    image: BannerTwo,
-    title: "Phụ kiện và màn hình cho góc máy gọn đẹp",
-    text: "Hoàn thiện setup với màn hình, chuột, bàn phím và phụ kiện công nghệ cần thiết.",
-    kicker: "Setup trọn bộ",
-    action: "Khám phá ngay",
-    to: "/category/phu-kien",
-  },
-];
+function formatPrice(value) {
+  const numberValue = Number(value ?? 0);
 
-function BannerIndicator(props) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(numberValue) ? numberValue : 0);
+}
+
+function normalizeProduct(product = {}) {
+  return {
+    id: product.id ?? product.product_id ?? null,
+
+    name:
+      product.name ??
+      product.product_name ??
+      "Sản phẩm công nghệ",
+
+    image:
+      product.image ??
+      product.image_url ??
+      product.thumbnail_url ??
+      product.thumbnail ??
+      "",
+
+    brand:
+      product.brand ??
+      product.brand_name ??
+      "Gearxin",
+
+    price:
+      product.price ??
+      product.base_price ??
+      product.min_price ??
+      0,
+
+    sold:
+      product.sold_count ??
+      product.totalSold ??
+      product.total_sold ??
+      product.soldQuantity ??
+      product.sold_quantity ??
+      0,
+  };
+}
+
+function Banner({ topSelling = [], loading = false }) {
+  const videoRef = useRef(null);
+  const heroRef = useRef(null);
+
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isTurning, setIsTurning] = useState(false);
+  const [heroVisible, setHeroVisible] = useState(true);
+  const [videoReady, setVideoReady] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
+
+  const products = useMemo(() => {
+    if (!Array.isArray(topSelling)) {
+      return [];
+    }
+
+    return topSelling
+      .map(normalizeProduct)
+      .filter((product) => product.id !== null)
+      .slice(0, 10);
+  }, [topSelling]);
+
+  const currentProduct = products[activeIndex] ?? null;
+
+  const nextIndex =
+    products.length > 0
+      ? (activeIndex + 1) % products.length
+      : 0;
+
+  const nextProduct = products[nextIndex] ?? currentProduct;
+
+  const publicUrl = process.env.PUBLIC_URL || "";
+  const videoUrl = `${publicUrl}/videos/tech-hero.mp4`;
+
+  useEffect(() => {
+    const heroElement = heroRef.current;
+
+    if (
+      !heroElement ||
+      typeof IntersectionObserver === "undefined"
+    ) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setHeroVisible(entry.isIntersecting);
+      },
+      {
+        threshold: 0.15,
+      },
+    );
+
+    observer.observe(heroElement);
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const videoElement = videoRef.current;
+
+    if (!videoElement || videoFailed) {
+      return undefined;
+    }
+
+    function updateVideoState() {
+      const canPlay =
+        heroVisible &&
+        document.visibilityState === "visible";
+
+      if (canPlay) {
+        const playPromise = videoElement.play();
+
+        if (playPromise?.catch) {
+          playPromise.catch(() => {});
+        }
+      } else {
+        videoElement.pause();
+      }
+    }
+
+    updateVideoState();
+
+    document.addEventListener(
+      "visibilitychange",
+      updateVideoState,
+    );
+
+    return () => {
+      document.removeEventListener(
+        "visibilitychange",
+        updateVideoState,
+      );
+
+      videoElement.pause();
+    };
+  }, [heroVisible, videoFailed]);
+
+  useEffect(() => {
+    if (
+      products.length <= 1 ||
+      !heroVisible ||
+      isTurning
+    ) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      setIsTurning(true);
+    }, 6500);
+
+    return () => window.clearInterval(timer);
+  }, [products.length, heroVisible, isTurning]);
+
+  function completeCubeTurn() {
+    if (!isTurning || products.length <= 1) {
+      return;
+    }
+
+    setActiveIndex(nextIndex);
+    setIsTurning(false);
+  }
+
+  function selectProduct(index) {
+    if (
+      index === activeIndex ||
+      isTurning ||
+      !products[index]
+    ) {
+      return;
+    }
+
+    setActiveIndex(index);
+  }
+
+  const currentUrl = currentProduct?.id
+    ? `/products/${currentProduct.id}`
+    : "/products";
+
   return (
-    <button
-      type="button"
-      data-bs-target="#bannerIndicators"
-      data-bs-slide-to={props.index}
-      className={props.active ? "active" : ""}
-      aria-current={props.active}
-    />
+    <section
+      ref={heroRef}
+      className={`gx3-hero ${
+        videoReady ? "is-video-ready" : ""
+      } ${videoFailed ? "is-video-failed" : ""}`}
+    >
+      {!videoFailed && (
+        <video
+          ref={videoRef}
+          className="gx3-hero__video"
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+          onLoadedData={() => setVideoReady(true)}
+          onError={() => setVideoFailed(true)}
+        >
+          <source src={videoUrl} type="video/mp4" />
+        </video>
+      )}
+
+      <div className="gx3-hero__overlay" />
+
+      <div className="container px-lg-5 gx3-hero__container">
+        <div className="gx3-hero__layout">
+          <div className="gx3-hero__content">
+            <span className="gx3-hero__eyebrow">
+              Sản phẩm bán chạy
+            </span>
+
+            <h1>
+              Công nghệ phù hợp
+              <br />
+              cho mọi nhu cầu
+            </h1>
+
+            <p>
+              Khám phá các thiết bị nổi bật dành cho học tập,
+              làm việc, sáng tạo và giải trí.
+            </p>
+
+            <div className="gx3-hero__actions">
+              <Link
+                to={currentUrl}
+                className="gx3-button gx3-button--primary"
+              >
+                Xem sản phẩm nổi bật
+              </Link>
+
+              <Link
+                to="/products"
+                className="gx3-button gx3-button--secondary"
+              >
+                Xem tất cả sản phẩm
+              </Link>
+            </div>
+          </div>
+
+          <div
+            className={`gx3-cubes ${
+              isTurning ? "is-turning" : ""
+            }`}
+          >
+            {loading ? (
+              <>
+                <div className="gx3-cube-loading" />
+                <div className="gx3-cube-loading" />
+              </>
+            ) : currentProduct && nextProduct ? (
+              <>
+                {/* KHỐI LẬP PHƯƠNG SẢN PHẨM */}
+                <div className="gx3-cube-scene">
+                  <div
+                    className="gx3-cube gx3-cube--product"
+                    onAnimationEnd={completeCubeTurn}
+                  >
+                    <div className="gx3-cube__face gx3-cube__face--front">
+                      <ProductFace product={currentProduct} />
+                    </div>
+
+                    <div className="gx3-cube__face gx3-cube__face--top">
+                      <ProductFace product={nextProduct} />
+                    </div>
+
+                    <div className="gx3-cube__face gx3-cube__face--right gx3-cube__side">
+                      GEARXIN
+                    </div>
+
+                    <div className="gx3-cube__face gx3-cube__face--left gx3-cube__side">
+                      TECHNOLOGY
+                    </div>
+
+                    <div className="gx3-cube__face gx3-cube__face--back gx3-cube__side">
+                      PRODUCT
+                    </div>
+
+                    <div className="gx3-cube__face gx3-cube__face--bottom gx3-cube__side">
+                      STORE
+                    </div>
+                  </div>
+                </div>
+
+                {/* KHỐI LẬP PHƯƠNG GIÁ */}
+                <div className="gx3-cube-scene">
+                  <div className="gx3-cube gx3-cube--price">
+                    <div className="gx3-cube__face gx3-cube__face--front">
+                      <PriceFace product={currentProduct} />
+                    </div>
+
+                    <div className="gx3-cube__face gx3-cube__face--bottom">
+                      <PriceFace product={nextProduct} />
+                    </div>
+
+                    <div className="gx3-cube__face gx3-cube__face--right gx3-cube__side">
+                      PRICE
+                    </div>
+
+                    <div className="gx3-cube__face gx3-cube__face--left gx3-cube__side">
+                      GEARXIN
+                    </div>
+
+                    <div className="gx3-cube__face gx3-cube__face--back gx3-cube__side">
+                      TECHNOLOGY
+                    </div>
+
+                    <div className="gx3-cube__face gx3-cube__face--top gx3-cube__side">
+                      STORE
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="gx3-hero__empty">
+                <strong>Khám phá sản phẩm công nghệ</strong>
+                <p>
+                  Xem các sản phẩm nổi bật đang có tại cửa hàng.
+                </p>
+
+                <Link to="/products">
+                  Xem danh sách sản phẩm
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {products.length > 1 && (
+          <div className="gx3-hero__dots">
+            {products.map((product, index) => (
+              <button
+                key={product.id}
+                type="button"
+                className={
+                  index === activeIndex ? "is-active" : ""
+                }
+                onClick={() => selectProduct(index)}
+                aria-label={`Hiển thị ${product.name}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
-function BannerImage(props) {
+function ProductFace({ product }) {
   return (
-    <div
-      className={"carousel-item " + (props.active ? "active" : "")}
-      data-bs-interval="5000"
-    >
-      <div className="ratio home-banner-ratio home-tech-hero">
-        <img
-          className="d-block w-100 h-100 bg-dark cover home-banner-image"
-          alt={props.title}
-          src={props.image}
-        />
-        <div className="home-banner-overlay" />
-        <div className="home-tech-grid" aria-hidden="true" />
-        <div className="home-tech-orbit home-tech-orbit-one" aria-hidden="true" />
-        <div className="home-tech-orbit home-tech-orbit-two" aria-hidden="true" />
+    <div className="gx3-product-face">
+      <span className="gx3-cube-label">Sản phẩm</span>
+
+      <div className="gx3-product-face__image">
+        {product.image ? (
+          <img
+            src={product.image}
+            alt={product.name}
+            decoding="async"
+          />
+        ) : (
+          <strong>GEARXIN</strong>
+        )}
       </div>
 
-      <div className="home-banner-caption">
-        <p className="home-banner-kicker">{props.kicker}</p>
-        <h1 className="home-banner-title">{props.title}</h1>
-        <p className="home-banner-text">{props.text}</p>
-        <div className="home-hero-actions">
-          <Link to={props.to} className="btn btn-warning btn-lg fw-bold home-primary-cta">
-            {props.action}
-          </Link>
-          <Link to="/about" className="btn btn-outline-light btn-lg home-secondary-cta">
-            Liên hệ tư vấn
-          </Link>
-        </div>
+      <div className="gx3-product-face__content">
+        <small>{product.brand}</small>
+        <h2>{product.name}</h2>
 
-        <div className="home-hero-metrics" aria-label="Thông tin nổi bật">
-          <span>
-            <strong>100+</strong>
-            cấu hình
-          </span>
-          <span>
-            <strong>24h</strong>
-            tư vấn
-          </span>
-          <span>
-            <strong>4.9/5</strong>
-            đánh giá
-          </span>
-        </div>
+        {Number(product.sold) > 0 && (
+          <p>
+            Đã bán{" "}
+            {Number(product.sold).toLocaleString("vi-VN")} sản
+            phẩm
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
-function Banner() {
+function PriceFace({ product }) {
+  const productUrl = product.id
+    ? `/products/${product.id}`
+    : "/products";
+
   return (
-    <div
-      id="bannerIndicators"
-      className="carousel slide home-hero-carousel"
-      data-bs-ride="carousel"
-    >
-      <div className="carousel-indicators">
-        {banners.map((banner, index) => (
-          <BannerIndicator
-            key={banner.title}
-            index={index}
-            active={index === 0}
-          />
-        ))}
-      </div>
+    <div className="gx3-price-face">
+      <span className="gx3-cube-label">Giá hiện tại</span>
 
-      <div className="carousel-inner">
-        {banners.map((banner, index) => (
-          <BannerImage
-            key={banner.title}
-            image={banner.image}
-            title={banner.title}
-            text={banner.text}
-            kicker={banner.kicker}
-            action={banner.action}
-            to={banner.to}
-            active={index === 0}
-          />
-        ))}
-      </div>
+      <strong className="gx3-price-face__value">
+        {formatPrice(product.price)}
+      </strong>
 
-      <button
-        className="carousel-control-prev"
-        type="button"
-        data-bs-target="#bannerIndicators"
-        data-bs-slide="prev"
+      <p>
+        Giá niêm yết hiện tại của sản phẩm tại Gearxin.
+      </p>
+
+      <Link
+        to={productUrl}
+        className="gx3-price-face__button"
       >
-        <span className="carousel-control-prev-icon" aria-hidden="true" />
-        <span className="visually-hidden">Previous</span>
-      </button>
-      <button
-        className="carousel-control-next"
-        type="button"
-        data-bs-target="#bannerIndicators"
-        data-bs-slide="next"
-      >
-        <span className="carousel-control-next-icon" aria-hidden="true" />
-        <span className="visually-hidden">Next</span>
-      </button>
+        Xem chi tiết
+      </Link>
     </div>
   );
 }

@@ -1,19 +1,34 @@
+import { Type } from 'class-transformer';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
+
 export class AiSearchDto {
-  /**
-   * Câu tìm kiếm tự nhiên.
-   * Ví dụ:
-   * "Tôi cần RAM cho sinh viên, mở 10 đến 15 tab, giá dưới 2 triệu"
-   */
+  @IsString()
+  @MinLength(2, {
+    message: 'Nội dung tìm kiếm phải có ít nhất 2 ký tự',
+  })
+  @MaxLength(1000, {
+    message: 'Nội dung tìm kiếm không được vượt quá 1000 ký tự',
+  })
   query!: string;
 
-  /**
-   * Có thể bỏ trống khi người dùng chưa đăng nhập.
-   */
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   customerId?: number;
 
-  /**
-   * Số lượng kết quả muốn nhận.
-   * Mặc định 10, tối đa 20.
-   */
-  limit?: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(20)
+  limit = 10;
 }
