@@ -3,8 +3,10 @@ import ProductDetail from "./products/detail/ProductDetail";
 import { Routes, Route } from "react-router-dom";
 import Landing from "./landing/Landing";
 import ProductList from "./products/ProductList";
+import StaffManagement from "./admin/StaffManagement";
 
 function App() {
+  if (window.location.hash.startsWith("#/admin/staff")) return <StaffManagement />;
   return (
     <Template>
       <Routes>
