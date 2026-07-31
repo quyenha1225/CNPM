@@ -1,13 +1,25 @@
-/* Reset cơ bản cho khu vực Admin */
+/* ==========================================
+   RESET & BỐ CỤC CHUNG ADMIN SYSTEM
+   ========================================== */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden; /* Cố định màn hình chính */
+}
+
 .admin-container {
   display: flex;
   height: 100vh;
+  width: 100vw;
   background-color: #f4f7fe;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   overflow: hidden;
 }
 
-/* --- SIDEBAR --- */
+/* ==========================================
+   1. SIDEBAR (THANH MENU BÊN TRÁI)
+   ========================================== */
 .admin-sidebar {
   width: 260px;
   background-color: #111c43;
@@ -15,6 +27,9 @@
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
+  height: 100vh;
+  z-index: 100;
 }
 
 .admin-sidebar.closed {
@@ -44,6 +59,7 @@
   padding: 0;
   margin: 0;
   flex-grow: 1;
+  overflow-y: auto; /* Cho phép cuộn menu nếu menu quá dài */
 }
 
 .menu-title {
@@ -52,6 +68,7 @@
   color: #a0aec0;
   font-weight: 600;
   letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .sidebar-menu li a {
@@ -76,15 +93,21 @@
   border-left: 4px solid #00d4ff;
 }
 
-/* --- MAIN AREA --- */
+/* ==========================================
+   2. KHUNG NỘI DUNG CHÍNH (MAIN AREA)
+   ========================================== */
 .admin-main {
-  flex-grow: 1;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  height: 100vh;
+  min-width: 0; /* Chống tràn vỡ layout flex */
+  overflow: hidden;
 }
 
-/* --- TOPBAR --- */
+/* ==========================================
+   3. TOPBAR (THANH TRÊN CÙNG)
+   ========================================== */
 .admin-topbar {
   height: 70px;
   background-color: #fff;
@@ -93,6 +116,8 @@
   justify-content: space-between;
   padding: 0 30px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+  z-index: 10;
 }
 
 .toggle-btn {
@@ -169,25 +194,34 @@
   color: #fff;
 }
 
-/* --- CONTENT --- */
-.admin-content {
-  padding: 30px;
+/* ==========================================
+   4. VÙNG NỘI DUNG TẤT CẢ CÁC CHỨC NĂNG
+   (Mở khóa cuộn dọc cho tất cả các trang)
+   ========================================== */
+.admin-content,
+.admin-main > div:nth-child(2),
+main {
+  padding: 30px !important;
+  flex: 1 !important;
+  height: calc(100vh - 70px) !important; /* Chiều cao trừ đi thanh Topbar */
+  overflow-y: scroll !important;         /* 🚀 BẮT BUỘC HIỆN THANH CUỘN DỌC */
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
 }
 
-.dashboard-welcome {
-  background-color: #fff;
-  padding: 30px;
-  border-radius: 15px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+/* Tùy chỉnh thanh cuộn cho đẹp mắt */
+.admin-content::-webkit-scrollbar,
+.admin-main > div:nth-child(2)::-webkit-scrollbar {
+  width: 8px;
 }
 
-.dashboard-welcome h1 {
-  margin: 0 0 10px 0;
-  color: #2d3748;
-  font-size: 24px;
+.admin-content::-webkit-scrollbar-thumb,
+.admin-main > div:nth-child(2)::-webkit-scrollbar-thumb {
+  background-color: #cbd5e0;
+  border-radius: 4px;
 }
 
-.dashboard-welcome p {
-  margin: 0;
-  color: #718096;
+.admin-content::-webkit-scrollbar-thumb:hover,
+.admin-main > div:nth-child(2)::-webkit-scrollbar-thumb:hover {
+  background-color: #a0aec0;
 }

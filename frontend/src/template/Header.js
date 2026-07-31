@@ -1,4 +1,4 @@
-import { Link, useNavigate, useLocation } from "react-router-dom"; // Thêm useLocation
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "../context/CartContext";
@@ -16,16 +16,16 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
   const { getTotalItems, cartItems } = useCart();
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false); // State mở/đóng dropdown user
   const [cartCount, setCartCount] = useState(0);
   const categoryDropdownRef = useRef(null);
+  const userDropdownRef = useRef(null); // Ref để đóng dropdown user khi click ra ngoài
   
-  // --- THÊM LOGIC LẮNG NGHE SỰ THAY ĐỔI CỦA TRANG (URL) ---
   const navigate = useNavigate();
   const location = useLocation(); 
   const [user, setUser] = useState(null); 
 
   useEffect(() => {
-    // Mỗi khi URL thay đổi (VD: từ /login sang /), nó sẽ lấy lại data mới nhất
     const storedUser = localStorage.getItem('user');
     if (storedUser && storedUser !== "undefined") {
       setUser(JSON.parse(storedUser));
@@ -37,34 +37,43 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
   const handleLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
-    setUser(null); // Xóa state user để giao diện cập nhật ngay lập tức
+    setUser(null);
+    setIsUserMenuOpen(false);
     navigate('/login');
   };
-  // ---------------------------------------------------------
 
   useEffect(() => {
-    function closeCategoryMenu(event) {
+    function handleOutsideClick(event) {
+      // Đóng danh mục
       if (
         categoryDropdownRef.current &&
         !categoryDropdownRef.current.contains(event.target)
       ) {
         setIsCategoryOpen(false);
       }
-    }
-
-    function closeCategoryMenuOnEscape(event) {
-      if (event.key === "Escape") {
-        setIsCategoryOpen(false);
-        setIsNavOpen(false);
+      // Đóng dropdown user
+      if (
+        userDropdownRef.current &&
+        !userDropdownRef.current.contains(event.target)
+      ) {
+        setIsUserMenuOpen(false);
       }
     }
 
-    document.addEventListener("mousedown", closeCategoryMenu);
-    document.addEventListener("keydown", closeCategoryMenuOnEscape);
+    function closeOnEscape(event) {
+      if (event.key === "Escape") {
+        setIsCategoryOpen(false);
+        setIsNavOpen(false);
+        setIsUserMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
 
     return () => {
-      document.removeEventListener("mousedown", closeCategoryMenu);
-      document.removeEventListener("keydown", closeCategoryMenuOnEscape);
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
     };
   }, []);
 
@@ -75,6 +84,7 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
   function closeMenus() {
     setIsCategoryOpen(false);
     setIsNavOpen(false);
+    setIsUserMenuOpen(false);
   }
 
   function resetProductFilters() {
@@ -88,6 +98,8 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
     setBrand("");
     closeMenus();
   }
+
+  const isAdminOrStaff = user && (user.role_code === "ADMIN" || user.role_code === "STAFF");
 
   return (
     <header className="eshop-header">
@@ -119,16 +131,86 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
               <b>{cartCount}</b>
             </Link>
 
-            {/* --- XỬ LÝ NÚT TÀI KHOẢN TRÊN DESKTOP --- */}
+            {/* --- DROPDOWN TÀI KHOẢN TÍCH HỢP CHỨC NĂNG ADMIN --- */}
             {user ? (
-              <div className="eshop-action-item dropdown-user" style={{ cursor: 'pointer', display: 'flex', gap: '15px' }}>
-                <span style={{ color: '#fff' }}>
-                  <FontAwesomeIcon icon={["fas", "user-check"]} style={{ marginRight: '5px' }}/>
-                  {user.user_full_name || user.email} {/* Đề phòng ko có full_name thì hiện email */}
-                </span>
-                <span onClick={handleLogout} style={{ color: '#ff4d4d', fontWeight: 'bold' }}>
-                  Đăng xuất
-                </span>
+              <div 
+                ref={userDropdownRef} 
+                className="eshop-action-item position-relative"
+                style={{ cursor: 'pointer' }}
+              >
+                <div 
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="d-flex align-items-center gap-2"
+                  style={{ color: '#fff', fontSize: '13px' }}
+                >
+                  <FontAwesomeIcon icon={["fas", "user-check"]} className="text-success" />
+                  <span className="fw-medium">{user.email || user.user_full_name}</span>
+                  
+                  {/* Badge hiển thị Quyền Quản Trị */}
+                  {isAdminOrStaff && (
+                    <span 
+                      className="badge bg-warning text-dark fw-bold px-1 py-1" 
+                      style={{ fontSize: '9px', borderRadius: '4px' }}
+                    >
+                      {user.role_code}
+                    </span>
+                  )}
+                  <FontAwesomeIcon icon={["fas", "chevron-down"]} style={{ fontSize: '10px', opacity: 0.8 }} />
+                </div>
+
+                {/* MENU XỔ XUỐNG CỦA USER / ADMIN */}
+                {isUserMenuOpen && (
+                  <div 
+                    className="position-absolute end-0 mt-2 py-2 bg-dark rounded-3 shadow-lg border border-secondary"
+                    style={{ minWidth: '220px', zIndex: 1000, top: '100%' }}
+                  >
+                    {/* CÁC NÚT DÀNH RIÊNG CHO ADMIN & STAFF */}
+                    {isAdminOrStaff && (
+                      <>
+                        <div className="px-3 py-1 text-uppercase text-muted fw-bold" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
+                          Quản trị hệ thống
+                        </div>
+                        
+                        <Link 
+                          to="/admin" 
+                          onClick={closeMenus}
+                          className="dropdown-item px-3 py-2 text-white fw-bold d-flex align-items-center gap-2"
+                          style={{ fontSize: '13px', backgroundColor: '#5b50e0' }}
+                        >
+                          🛡️ Trang Quản Trị (Admin)
+                        </Link>
+
+                        <Link 
+                          to="/admin/inventory" 
+                          onClick={closeMenus}
+                          className="dropdown-item px-3 py-2 text-light d-flex align-items-center gap-2"
+                          style={{ fontSize: '13px' }}
+                        >
+                          🏢 Quản lý Kho & Nhập xuất
+                        </Link>
+
+                        <Link 
+                          to="/admin/orders" 
+                          onClick={closeMenus}
+                          className="dropdown-item px-3 py-2 text-light d-flex align-items-center gap-2"
+                          style={{ fontSize: '13px' }}
+                        >
+                          🛒 Quản lý Đơn hàng
+                        </Link>
+
+                        <hr className="dropdown-divider border-secondary my-1" />
+                      </>
+                    )}
+
+                    <button 
+                      onClick={handleLogout}
+                      className="dropdown-item px-3 py-2 text-danger fw-bold d-flex align-items-center gap-2 bg-transparent border-0 w-100 text-start"
+                      style={{ fontSize: '13px' }}
+                    >
+                      🚪 Đăng xuất
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <Link to="/login" className="eshop-user-btn">
@@ -136,7 +218,7 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
                 <span>Tài khoản</span>
               </Link>
             )}
-            {/* ---------------------------------------- */}
+            {/* -------------------------------------------------- */}
           </div>
 
           <button
@@ -200,21 +282,31 @@ function Header({ setCategory = () => {}, setBrand = () => {} }) {
           <Link to="/contact" className="eshop-nav-mobile-link" onClick={closeMenus}>Liên hệ</Link>
           <Link to="/cart" className="eshop-nav-mobile-link" onClick={closeMenus}>Giỏ hàng ({getTotalItems()})</Link>
 
-          {/* --- XỬ LÝ NÚT TÀI KHOẢN TRÊN MOBILE MENU --- */}
+          {/* --- MENU TRÊN MOBILE DÀNH CHO ADMIN / USER --- */}
           {user ? (
-            <button 
-              className="eshop-nav-mobile-link" 
-              onClick={() => { closeMenus(); handleLogout(); }}
-              style={{ background: 'none', border: 'none', textAlign: 'left', color: 'red', fontWeight: 'bold', width: '100%', padding: '10px 15px' }}
-            >
-              Đăng xuất ({user.user_full_name || user.email})
-            </button>
+            <>
+              {isAdminOrStaff && (
+                <Link 
+                  to="/admin" 
+                  className="eshop-nav-mobile-link text-warning fw-bold" 
+                  onClick={closeMenus}
+                >
+                  🛡️ Trang Quản Trị (Admin)
+                </Link>
+              )}
+              <button 
+                className="eshop-nav-mobile-link" 
+                onClick={() => { closeMenus(); handleLogout(); }}
+                style={{ background: 'none', border: 'none', textAlign: 'left', color: '#ff4d4d', fontWeight: 'bold', width: '100%', padding: '10px 15px' }}
+              >
+                Đăng xuất ({user.user_full_name || user.email})
+              </button>
+            </>
           ) : (
             <Link to="/login" className="eshop-nav-mobile-link" onClick={closeMenus}>
               Tài khoản
             </Link>
           )}
-          {/* ------------------------------------------- */}
         </div>
       </nav>
     </header>

@@ -18,6 +18,9 @@ import Dashboard from "./admin/Dashboard";
 import UserManager from "./admin/UserManager";
 import ProductManager from "./admin/ProductManager";
 import OrderManager from "./admin/OrderManager";
+import InventoryManager from "./admin/InventoryManager";
+import ReportsManager from "./admin/ReportsManager";     // 💡 BỔ SUNG: Trang Báo cáo
+import SystemLogsManager from "./admin/SystemLogsManager"; // 💡 BỔ SUNG: Trang Lịch sử hệ thống
 
 // Map chuẩn khớp 100% với category_slug trong Database MySQL
 const categorySlugMap = {
@@ -118,11 +121,16 @@ function App() {
           {/* 1. Trang Tổng quan Dashboard */}
           <Route index element={<Dashboard />} /> 
           
-          {/* 2. Trang Quản lý Sản phẩm & Đơn hàng */}
+          {/* 2. Trang Quản lý Sản phẩm, Kho hàng & Đơn hàng */}
           <Route path="products" element={<ProductManager />} />
+          <Route path="inventory" element={<InventoryManager />} />
           <Route path="orders" element={<OrderManager />} />
           
-          {/* 3. Trang Quản lý User (Chỉ ADMIN mới vào được) */}
+          {/* 3. Trang Theo dõi & Báo cáo hệ thống */}
+          <Route path="reports" element={<ReportsManager />} />
+          <Route path="logs" element={<SystemLogsManager />} />
+          
+          {/* 4. Trang Quản lý User (Chỉ ADMIN mới vào được) */}
           <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
             <Route path="users" element={<UserManager />} />
           </Route>
