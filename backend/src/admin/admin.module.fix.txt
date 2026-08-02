@@ -1,0 +1,13 @@
+THÊM IMPORT:
+
+import { AuthModule } from '../auth/auth.module';
+
+
+TRONG @Module:
+
+imports: [
+  // Giữ các module cũ
+  AuthModule,
+],
+
+KHÔNG thêm AuthService trực tiếp vào providers của AdminModule.

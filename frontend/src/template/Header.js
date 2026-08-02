@@ -138,7 +138,20 @@ function Header({
     "STAFF",
     "ADMIN",
   ].includes(currentRole);
+const managementPath =
+  currentRole === "ADMIN"
+    ? "/admin"
+    : "/staff";
 
+const managementTitle =
+  currentRole === "ADMIN"
+    ? "Vào trang quản trị"
+    : "Vào trang làm việc";
+
+const managementDescription =
+  currentRole === "ADMIN"
+    ? "Quản lý hệ thống và phân quyền"
+    : "Xử lý đơn hàng, kho và thanh toán";
   const [
     searchQuery,
     setSearchQuery,
@@ -646,10 +659,10 @@ function Header({
 
                       {canAccessManagement && (
                         <Link
-                          to="/staff"
-                          className="gx-header__management-link"
-                          onClick={closeMenus}
-                        >
+  to={managementPath}
+  className="gx-header__management-link"
+  onClick={closeMenus}
+>
                           <span className="gx-header__management-icon">
                             <FontAwesomeIcon
                               icon={[
@@ -660,16 +673,14 @@ function Header({
                           </span>
 
                           <span className="gx-header__management-copy">
-                            <strong>
-                              Vào trang quản lý
-                            </strong>
+  <strong>
+    {managementTitle}
+  </strong>
 
-                            <small>
-                              Xử lý đơn hàng,
-                              kho và báo cáo
-                            </small>
-                          </span>
-
+  <small>
+    {managementDescription}
+  </small>
+</span>
                           <FontAwesomeIcon
                             className="gx-header__management-arrow"
                             icon={[

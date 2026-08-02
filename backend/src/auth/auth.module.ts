@@ -4,7 +4,12 @@ import {
   JwtModule,
   type JwtModuleOptions,
 } from '@nestjs/jwt';
-
+import {
+  PasswordResetService,
+} from './password-reset.service';
+import {
+  GoogleOauthService,
+} from './google-oauth.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
@@ -47,11 +52,13 @@ import { UsersModule } from '../users/users.module';
 
   controllers: [AuthController],
 
-  providers: [AuthService],
-
-  exports: [
-    AuthService,
-    JwtModule,
-  ],
+exports: [
+  AuthService,
+],
+providers: [
+  AuthService,
+  PasswordResetService,
+  GoogleOauthService
+],
 })
 export class AuthModule {}

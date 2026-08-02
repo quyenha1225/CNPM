@@ -2,47 +2,46 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { AdminModule } from './admin/admin.module';
+import { AiModule } from './ai/ai.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
-import { ProductsModule } from './products/products.module';
 import { CartModule } from './cart/cart.module';
 import { CategoriesModule } from './categories/categories.module';
-import { AiModule } from './ai/ai.module';
+import { ProductsModule } from './products/products.module';
 import { StaffModule } from './staff/staff.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env',
     }),
 
     TypeOrmModule.forRoot({
       type: 'mysql',
-      host: process.env.DB_HOST,
-      port: parseInt(
-        process.env.DB_PORT ||
-          '3306',
-        10,
-      ),
-      username:
-        process.env.DB_USERNAME,
-      password:
-        process.env.DB_PASSWORD,
-      database:
-        process.env.DB_DATABASE,
+      host: process.env.DB_HOST || 'localhost',
+      port: Number.parseInt(process.env.DB_PORT || '3306', 10),
+      username: process.env.DB_USERNAME || 'root',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_DATABASE || 'electroshop_db',
 
       entities: [
-        __dirname +
-          '/**/*.entity{.ts,.js}',
+        `${__dirname}/**/*.entity{.ts,.js}`,
       ],
 
       /*
-       * Database được tạo bằng SQL thủ công.
-       * Không để TypeORM tự thay đổi cấu trúc.
+       * Database được quản lý bằng SQL thủ công.
+       * Không bật synchronize để tránh TypeORM tự sửa/xóa bảng.
        */
       synchronize: false,
+
+      retryAttempts: 5,
+      retryDelay: 3000,
+      charset: 'utf8mb4',
+      logging: false,
     }),
 
     UsersModule,
@@ -51,10 +50,20 @@ import { StaffModule } from './staff/staff.module';
     CartModule,
     CategoriesModule,
     AiModule,
+
+    /*
+     * STAFF và ADMIN là hai module độc lập.
+     */
     StaffModule,
+    AdminModule,
   ],
 
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [
+    AppController,
+  ],
+
+  providers: [
+    AppService,
+  ],
 })
 export class AppModule {}

@@ -1,4 +1,8 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import {
   Route,
   Routes,
@@ -6,6 +10,7 @@ import {
 } from "react-router-dom";
 
 import About from "./about/About";
+import AdminDashboard from "./admin/AdminDashboard";
 import AiSearchResult from "./ai/AiSearchResult";
 import ForgotPassword from "./auth/ForgotPassword";
 import Login from "./auth/Login";
@@ -38,15 +43,15 @@ function CategoryProductPage({
   const { categorySlug } = useParams();
 
   useEffect(() => {
-    const resolvedCategory =
-      categorySlugMap[categorySlug] || "";
+    setCategory(
+      categorySlugMap[categorySlug] || "",
+    );
 
-    setCategory(resolvedCategory);
     setBrand("");
   }, [
     categorySlug,
-    setCategory,
     setBrand,
+    setCategory,
   ]);
 
   return (
@@ -182,17 +187,27 @@ function StorefrontRoutes() {
 function App() {
   return (
     <Routes>
+      {/* ADMIN có khu vực quản trị riêng */}
+      <Route
+        path="/admin/*"
+        element={
+          <RequireRole roles={["ADMIN"]}>
+            <AdminDashboard />
+          </RequireRole>
+        }
+      />
+
+      {/* STAFF có khu vực nghiệp vụ riêng */}
       <Route
         path="/staff/*"
         element={
-          <RequireRole
-            roles={["STAFF", "ADMIN"]}
-          >
+          <RequireRole roles={["STAFF"]}>
             <StaffDashboard />
           </RequireRole>
         }
       />
 
+      {/* Website khách hàng */}
       <Route
         path="/*"
         element={<StorefrontRoutes />}

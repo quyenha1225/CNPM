@@ -1,0 +1,42 @@
+.gx-admin-inventory__tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 17px;
+  padding: 7px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 13px;
+  background: #fff;
+}
+
+.gx-admin-inventory__tabs button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.gx-admin-inventory__tabs button.is-active {
+  background: linear-gradient(135deg, #06b6d4, #2563eb);
+  color: #fff;
+}
+
+.gx-admin-inventory__identity {
+  display: grid;
+  gap: 3px;
+}
+
+.gx-admin-inventory__identity strong {
+  color: #0f172a;
+  font-size: 0.75rem;
+}
+
+.gx-admin-inventory__identity small {
+  color: #94a3b8;
+  font-size: 0.64rem;
+}
