@@ -731,30 +731,59 @@ CREATE TABLE IF NOT EXISTS ai_search_results (
 -- 9.1 PASSWORD RESET OTP
 -- =========================================================
 
-CREATE TABLE IF NOT EXISTS password_reset_otps (
-    reset_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT UNSIGNED NOT NULL,
-    otp_hash CHAR(64) NOT NULL,
+USE electroshop_db;
+
+DROP TABLE IF EXISTS password_reset_otps;
+CREATE TABLE password_reset_otps (
+    reset_otp_id BIGINT UNSIGNED
+        NOT NULL AUTO_INCREMENT,
+
+    user_id BIGINT UNSIGNED NULL,
+
+    email VARCHAR(255)
+        CHARACTER SET utf8mb4
+        COLLATE utf8mb4_unicode_ci
+        NOT NULL,
+
+    otp_hash VARCHAR(255)
+        CHARACTER SET utf8mb4
+        COLLATE utf8mb4_unicode_ci
+        NOT NULL,
+
     expires_at DATETIME NOT NULL,
+
     verified_at DATETIME NULL,
+
     used_at DATETIME NULL,
-    attempt_count INT UNSIGNED NOT NULL DEFAULT 0,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT fk_password_reset_otp_user
-        FOREIGN KEY (user_id) REFERENCES users(user_id)
-        ON UPDATE CASCADE ON DELETE CASCADE,
+    attempts INT UNSIGNED
+        NOT NULL DEFAULT 0,
 
-    INDEX idx_password_reset_user_created (
-        user_id,
+    created_at DATETIME
+        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (reset_otp_id),
+
+    INDEX idx_password_reset_email_created (
+        email,
         created_at
     ),
 
-    INDEX idx_password_reset_expiry (
-        expires_at
-    )
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    INDEX idx_password_reset_user (
+        user_id
+    ),
 
+    CONSTRAINT fk_password_reset_otps_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_unicode_ci;
+
+SHOW COLUMNS FROM password_reset_otps;
 -- =========================================================
 -- 9.2 AI CONVERSATION TABLES
 -- =========================================================
