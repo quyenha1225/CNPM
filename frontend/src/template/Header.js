@@ -1,9 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import {
   Link,
   NavLink,
   useNavigate,
 } from "react-router-dom";
+
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import { useAuth } from "../context/AuthContext";
@@ -11,7 +17,8 @@ import { useCart } from "../context/CartContext";
 import logo from "../quyen-pc-logo.png";
 
 const API_BASE =
-  process.env.REACT_APP_API_URL || "http://localhost:3001/api";
+  process.env.REACT_APP_API_URL ||
+  "http://localhost:3001/api";
 
 const categories = [
   {
@@ -49,12 +56,48 @@ function getUserDisplayName(user) {
     user?.userFullName ||
     "";
 
-  if (name.trim()) {
-    const parts = name.trim().split(/\s+/);
+  if (String(name).trim()) {
+    const parts = String(name)
+      .trim()
+      .split(/\s+/);
+
     return parts.slice(-2).join(" ");
   }
 
-  return user?.email || user?.user_email || "Tài khoản";
+  return (
+    user?.email ||
+    user?.user_email ||
+    "Tài khoản"
+  );
+}
+
+function getUserRoleCode(user) {
+  const directRole =
+    typeof user?.role === "string"
+      ? user.role
+      : "";
+
+  const nestedRole =
+    typeof user?.role === "object" &&
+    user?.role
+      ? user.role.roleCode ||
+        user.role.role_code ||
+        user.role.code ||
+        user.role.name ||
+        ""
+      : "";
+
+  return String(
+    directRole ||
+      user?.roleCode ||
+      user?.role_code ||
+      user?.userRole ||
+      user?.user_role ||
+      nestedRole ||
+      "",
+  )
+    .trim()
+    .toUpperCase();
 }
 
 function Header({
@@ -62,50 +105,106 @@ function Header({
   setBrand = () => {},
 }) {
   const navigate = useNavigate();
+
   const categoryRef = useRef(null);
   const accountRef = useRef(null);
   const searchInputRef = useRef(null);
 
   const auth = useAuth();
-  const { cartItems, getTotalItems } = useCart();
+
+  const {
+    cartItems,
+    getTotalItems,
+  } = useCart();
 
   const user = auth?.user || null;
+
   const isAuthenticated =
-    typeof auth?.isAuthenticated === "boolean"
+    typeof auth?.isAuthenticated ===
+    "boolean"
       ? auth.isAuthenticated
       : Boolean(user || auth?.token);
+
   const authLoading = Boolean(
-    auth?.sessionLoading ?? auth?.loading ?? false
+    auth?.sessionLoading ??
+      auth?.loading ??
+      false,
   );
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchError, setSearchError] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
-  const [isAccountOpen, setIsAccountOpen] = useState(false);
-  const [isNavOpen, setIsNavOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
+  const currentRole =
+    getUserRoleCode(user);
+
+  const canAccessManagement = [
+    "STAFF",
+    "ADMIN",
+  ].includes(currentRole);
+
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
+
+  const [
+    searchError,
+    setSearchError,
+  ] = useState("");
+
+  const [
+    isSearching,
+    setIsSearching,
+  ] = useState(false);
+
+  const [
+    isCategoryOpen,
+    setIsCategoryOpen,
+  ] = useState(false);
+
+  const [
+    isAccountOpen,
+    setIsAccountOpen,
+  ] = useState(false);
+
+  const [
+    isNavOpen,
+    setIsNavOpen,
+  ] = useState(false);
+
+  const [
+    cartCount,
+    setCartCount,
+  ] = useState(0);
 
   useEffect(() => {
     try {
-      setCartCount(Number(getTotalItems?.() || 0));
+      setCartCount(
+        Number(
+          getTotalItems?.() || 0,
+        ),
+      );
     } catch {
       setCartCount(0);
     }
-  }, [cartItems, getTotalItems]);
+  }, [
+    cartItems,
+    getTotalItems,
+  ]);
 
   useEffect(() => {
     function handlePointerDown(event) {
       if (
         categoryRef.current &&
-        !categoryRef.current.contains(event.target)
+        !categoryRef.current.contains(
+          event.target,
+        )
       ) {
         setIsCategoryOpen(false);
       }
 
       if (
         accountRef.current &&
-        !accountRef.current.contains(event.target)
+        !accountRef.current.contains(
+          event.target,
+        )
       ) {
         setIsAccountOpen(false);
       }
@@ -119,12 +218,26 @@ function Header({
       }
     }
 
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener(
+      "mousedown",
+      handlePointerDown,
+    );
+
+    document.addEventListener(
+      "keydown",
+      handleKeyDown,
+    );
 
     return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener(
+        "mousedown",
+        handlePointerDown,
+      );
+
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown,
+      );
     };
   }, []);
 
@@ -149,12 +262,14 @@ function Header({
   async function handleAiSearch(event) {
     event.preventDefault();
 
-    const query = searchQuery.trim();
+    const query =
+      searchQuery.trim();
 
     if (query.length < 2) {
       setSearchError(
-        "Hãy mô tả sản phẩm cần tìm bằng ít nhất 2 ký tự."
+        "Hãy mô tả sản phẩm cần tìm bằng ít nhất 2 ký tự.",
       );
+
       searchInputRef.current?.focus();
       return;
     }
@@ -175,50 +290,63 @@ function Header({
       };
 
       if (customerId) {
-        requestBody.customerId = Number(customerId);
+        requestBody.customerId =
+          Number(customerId);
       }
 
-      const response = await fetch(`${API_BASE}/ai/search`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${API_BASE}/ai/search`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify(
+            requestBody,
+          ),
         },
-        body: JSON.stringify(requestBody),
-      });
+      );
 
-      const data = await response.json().catch(() => ({}));
+      const data = await response
+        .json()
+        .catch(() => ({}));
 
       if (!response.ok) {
-        const message = Array.isArray(data.message)
-          ? data.message.join(", ")
-          : data.detail ||
-            data.message ||
-            "AI Search chưa thể xử lý yêu cầu.";
+        const message =
+          Array.isArray(data.message)
+            ? data.message.join(", ")
+            : data.detail ||
+              data.message ||
+              "AI Search chưa thể xử lý yêu cầu.";
 
         throw new Error(message);
       }
 
       sessionStorage.setItem(
         "aiSearchResult",
-        JSON.stringify(data)
+        JSON.stringify(data),
       );
 
-      navigate(`/ai-search?search=${Date.now()}`, {
-        replace: true,
-        state: {
-          aiSearchResult: data,
-          result: data,
-          query,
+      navigate(
+        `/ai-search?search=${Date.now()}`,
+        {
+          replace: true,
+          state: {
+            aiSearchResult: data,
+            result: data,
+            query,
+          },
         },
-      });
+      );
 
       closeMenus();
     } catch (error) {
       setSearchError(
         error instanceof Error
           ? error.message
-          : "Không thể kết nối tới máy chủ."
+          : "Không thể kết nối tới máy chủ.",
       );
     } finally {
       setIsSearching(false);
@@ -227,47 +355,71 @@ function Header({
 
   async function handleLogout() {
     try {
-      await Promise.resolve(auth?.logout?.());
+      await Promise.resolve(
+        auth?.logout?.(),
+      );
     } finally {
       closeMenus();
       navigate("/");
     }
   }
 
-  const navClassName = ({ isActive }) =>
-    `gx-header__nav-link ${isActive ? "is-active" : ""}`;
+  const navClassName = ({
+    isActive,
+  }) =>
+    `gx-header__nav-link ${
+      isActive ? "is-active" : ""
+    }`;
 
   return (
     <header
       className={`gx-header ${
-        isNavOpen ? "is-mobile-open" : ""
+        isNavOpen
+          ? "is-mobile-open"
+          : ""
       }`}
     >
-      <div className="gx-header__visual" aria-hidden="true">
+      <div
+        className="gx-header__visual"
+        aria-hidden="true"
+      >
         <span className="gx-header__orb gx-header__orb--one" />
+
         <span className="gx-header__orb gx-header__orb--two" />
+
         <span className="gx-header__scan" />
       </div>
 
       <div className="gx-header__ticker">
         <div className="gx-header__ticker-track">
           <span>
-            <b>AI Search</b> tư vấn cấu hình theo đúng nhu cầu
+            <b>AI Search</b> tư vấn cấu
+            hình theo đúng nhu cầu
           </span>
+
           <span>
-            <b>Dữ liệu thật</b> đồng bộ từ sản phẩm và đơn hàng
+            <b>An Toàn</b> hiện đại
+            xử lí nhanh chóng
           </span>
+
           <span>
-            <b>Gearxin</b> công nghệ chính hãng, hỗ trợ tận tâm
+            <b>Gearxin</b> công nghệ
+            chính hãng, hỗ trợ tận tâm
           </span>
+
           <span aria-hidden="true">
-            <b>AI Search</b> tư vấn cấu hình theo đúng nhu cầu
+            <b>AI Search</b> tư vấn cấu
+            hình theo đúng nhu cầu
           </span>
+
           <span aria-hidden="true">
-            <b>Dữ liệu thật</b> đồng bộ từ sản phẩm và đơn hàng
+            <b>Dữ liệu thật</b> đồng bộ
+            từ sản phẩm và đơn hàng
           </span>
+
           <span aria-hidden="true">
-            <b>Gearxin</b> công nghệ chính hãng, hỗ trợ tận tâm
+            <b>Gearxin</b> công nghệ
+            chính hãng, hỗ trợ tận tâm
           </span>
         </div>
       </div>
@@ -281,11 +433,17 @@ function Header({
             aria-label="Gearxin - Trang chủ"
           >
             <span className="gx-header__brand-logo">
-              <img src={logo} alt="Gearxin" />
+              <img
+                src={logo}
+                alt="Gearxin"
+              />
             </span>
+
             <span className="gx-header__brand-copy">
               <strong>GEARXIN</strong>
-              <small>Technology Store</small>
+              <small>
+                Technology Store
+              </small>
             </span>
           </Link>
 
@@ -295,7 +453,12 @@ function Header({
               onSubmit={handleAiSearch}
             >
               <span className="gx-header__ai-label">
-                <FontAwesomeIcon icon={["fas", "robot"]} />
+                <FontAwesomeIcon
+                  icon={[
+                    "fas",
+                    "robot",
+                  ]}
+                />
                 AI
               </span>
 
@@ -304,7 +467,10 @@ function Header({
                 type="search"
                 value={searchQuery}
                 onChange={(event) => {
-                  setSearchQuery(event.target.value);
+                  setSearchQuery(
+                    event.target.value,
+                  );
+
                   if (searchError) {
                     setSearchError("");
                   }
@@ -324,11 +490,19 @@ function Header({
                 }
               >
                 <FontAwesomeIcon
-                  icon={["fas", isSearching ? "spinner" : "search"]}
+                  icon={[
+                    "fas",
+                    isSearching
+                      ? "spinner"
+                      : "search",
+                  ]}
                   spin={isSearching}
                 />
+
                 <span>
-                  {isSearching ? "Đang phân tích" : "Tìm kiếm"}
+                  {isSearching
+                    ? "Đang phân tích"
+                    : "Tìm kiếm"}
                 </span>
               </button>
             </form>
@@ -350,8 +524,14 @@ function Header({
               onClick={closeMenus}
             >
               <span className="gx-header__action-icon">
-                <FontAwesomeIcon icon={["fas", "phone-alt"]} />
+                <FontAwesomeIcon
+                  icon={[
+                    "fas",
+                    "phone-alt",
+                  ]}
+                />
               </span>
+
               <span className="gx-header__action-copy">
                 <small>Hỗ trợ</small>
                 <strong>Liên hệ</strong>
@@ -365,10 +545,15 @@ function Header({
             >
               <span className="gx-header__action-icon">
                 <FontAwesomeIcon
-                  icon={["fas", "shopping-cart"]}
+                  icon={[
+                    "fas",
+                    "shopping-cart",
+                  ]}
                 />
+
                 <b>{cartCount}</b>
               </span>
+
               <span className="gx-header__action-copy">
                 <small>Sản phẩm</small>
                 <strong>Giỏ hàng</strong>
@@ -383,30 +568,52 @@ function Header({
                 type="button"
                 className="gx-header__account-trigger"
                 onClick={() => {
-                  setIsAccountOpen((value) => !value);
-                  setIsCategoryOpen(false);
+                  setIsAccountOpen(
+                    (value) => !value,
+                  );
+
+                  setIsCategoryOpen(
+                    false,
+                  );
                 }}
                 disabled={authLoading}
-                aria-expanded={isAccountOpen}
+                aria-expanded={
+                  isAccountOpen
+                }
               >
                 <span className="gx-header__avatar">
-                  <FontAwesomeIcon icon={["fas", "user-alt"]} />
+                  <FontAwesomeIcon
+                    icon={[
+                      "fas",
+                      "user-alt",
+                    ]}
+                  />
                 </span>
+
                 <span className="gx-header__account-copy">
                   <small>
-                    {isAuthenticated ? "Xin chào" : "Tài khoản"}
+                    {isAuthenticated
+                      ? "Xin chào"
+                      : "Tài khoản"}
                   </small>
+
                   <strong>
                     {authLoading
                       ? "Đang tải..."
                       : isAuthenticated
-                        ? getUserDisplayName(user)
+                        ? getUserDisplayName(
+                            user,
+                          )
                         : "Đăng nhập"}
                   </strong>
                 </span>
+
                 <FontAwesomeIcon
                   className="gx-header__account-chevron"
-                  icon={["fas", "chevron-down"]}
+                  icon={[
+                    "fas",
+                    "chevron-down",
+                  ]}
                 />
               </button>
 
@@ -416,22 +623,77 @@ function Header({
                     <>
                       <div className="gx-header__account-summary">
                         <strong>
-                          {getUserDisplayName(user)}
+                          {getUserDisplayName(
+                            user,
+                          )}
                         </strong>
+
                         <small>
                           {user?.email ||
                             user?.user_email ||
                             "Tài khoản Gearxin"}
                         </small>
+
+                        {canAccessManagement && (
+                          <span className="gx-header__role-badge">
+                            {currentRole ===
+                            "ADMIN"
+                              ? "Quản trị viên"
+                              : "Nhân viên"}
+                          </span>
+                        )}
                       </div>
+
+                      {canAccessManagement && (
+                        <Link
+                          to="/staff"
+                          className="gx-header__management-link"
+                          onClick={closeMenus}
+                        >
+                          <span className="gx-header__management-icon">
+                            <FontAwesomeIcon
+                              icon={[
+                                "fas",
+                                "th-large",
+                              ]}
+                            />
+                          </span>
+
+                          <span className="gx-header__management-copy">
+                            <strong>
+                              Vào trang quản lý
+                            </strong>
+
+                            <small>
+                              Xử lý đơn hàng,
+                              kho và báo cáo
+                            </small>
+                          </span>
+
+                          <FontAwesomeIcon
+                            className="gx-header__management-arrow"
+                            icon={[
+                              "fas",
+                              "arrow-right",
+                            ]}
+                          />
+                        </Link>
+                      )}
 
                       <button
                         type="button"
-                        onClick={handleLogout}
+                        className="gx-header__logout-button"
+                        onClick={
+                          handleLogout
+                        }
                       >
                         <FontAwesomeIcon
-                          icon={["fas", "sign-out-alt"]}
+                          icon={[
+                            "fas",
+                            "sign-out-alt",
+                          ]}
                         />
+
                         Đăng xuất
                       </button>
                     </>
@@ -442,8 +704,12 @@ function Header({
                         onClick={closeMenus}
                       >
                         <FontAwesomeIcon
-                          icon={["fas", "sign-in-alt"]}
+                          icon={[
+                            "fas",
+                            "sign-in-alt",
+                          ]}
                         />
+
                         Đăng nhập
                       </Link>
 
@@ -452,8 +718,12 @@ function Header({
                         onClick={closeMenus}
                       >
                         <FontAwesomeIcon
-                          icon={["fas", "user-plus"]}
+                          icon={[
+                            "fas",
+                            "user-plus",
+                          ]}
                         />
+
                         Tạo tài khoản
                       </Link>
                     </>
@@ -466,7 +736,10 @@ function Header({
               type="button"
               className="gx-header__mobile-toggle"
               onClick={() => {
-                setIsNavOpen((value) => !value);
+                setIsNavOpen(
+                  (value) => !value,
+                );
+
                 setIsCategoryOpen(false);
                 setIsAccountOpen(false);
               }}
@@ -478,7 +751,12 @@ function Header({
               aria-expanded={isNavOpen}
             >
               <FontAwesomeIcon
-                icon={["fas", isNavOpen ? "times" : "bars"]}
+                icon={[
+                  "fas",
+                  isNavOpen
+                    ? "times"
+                    : "bars",
+                ]}
               />
             </button>
           </div>
@@ -490,59 +768,106 @@ function Header({
           <div
             ref={categoryRef}
             className={`gx-header__category ${
-              isCategoryOpen ? "is-open" : ""
+              isCategoryOpen
+                ? "is-open"
+                : ""
             }`}
           >
             <button
               type="button"
               className="gx-header__category-trigger"
               onClick={() => {
-                setIsCategoryOpen((value) => !value);
+                setIsCategoryOpen(
+                  (value) => !value,
+                );
+
                 setIsAccountOpen(false);
               }}
-              aria-expanded={isCategoryOpen}
+              aria-expanded={
+                isCategoryOpen
+              }
             >
-              <FontAwesomeIcon icon={["fas", "bars"]} />
-              <span>Danh mục sản phẩm</span>
+              <FontAwesomeIcon
+                icon={[
+                  "fas",
+                  "bars",
+                ]}
+              />
+
+              <span>
+                Danh mục sản phẩm
+              </span>
+
               <FontAwesomeIcon
                 className="gx-header__category-chevron"
-                icon={["fas", "chevron-down"]}
+                icon={[
+                  "fas",
+                  "chevron-down",
+                ]}
               />
             </button>
 
             <div className="gx-header__category-menu">
               <Link
                 to="/products"
-                onClick={resetProductFilters}
+                onClick={
+                  resetProductFilters
+                }
               >
                 <span>
-                  <FontAwesomeIcon icon={["fas", "th-large"]} />
+                  <FontAwesomeIcon
+                    icon={[
+                      "fas",
+                      "th-large",
+                    ]}
+                  />
                 </span>
+
                 <div>
-                  <strong>Tất cả sản phẩm</strong>
-                  <small>Khám phá toàn bộ cửa hàng</small>
+                  <strong>
+                    Tất cả sản phẩm
+                  </strong>
+
+                  <small>
+                    Khám phá toàn bộ cửa
+                    hàng
+                  </small>
                 </div>
               </Link>
 
-              {categories.map((category) => (
-                <Link
-                  key={category.id}
-                  to={`/category/${category.id}`}
-                  onClick={() => applyCategory(category.id)}
-                >
-                  <span>
-                    <FontAwesomeIcon
-                      icon={["fas", category.icon]}
-                    />
-                  </span>
-                  <div>
-                    <strong>{category.label}</strong>
-                    <small>
-                      Sản phẩm {category.label.toLowerCase()}
-                    </small>
-                  </div>
-                </Link>
-              ))}
+              {categories.map(
+                (category) => (
+                  <Link
+                    key={category.id}
+                    to={`/category/${category.id}`}
+                    onClick={() =>
+                      applyCategory(
+                        category.id,
+                      )
+                    }
+                  >
+                    <span>
+                      <FontAwesomeIcon
+                        icon={[
+                          "fas",
+                          category.icon,
+                        ]}
+                      />
+                    </span>
+
+                    <div>
+                      <strong>
+                        {category.label}
+                      </strong>
+
+                      <small>
+                        Sản phẩm{" "}
+                        {category.label.toLowerCase()}
+                      </small>
+                    </div>
+                  </Link>
+                ),
+              )}
             </div>
           </div>
 
@@ -559,7 +884,9 @@ function Header({
             <NavLink
               to="/products"
               className={navClassName}
-              onClick={resetProductFilters}
+              onClick={
+                resetProductFilters
+              }
             >
               Sản phẩm
             </NavLink>
@@ -567,7 +894,9 @@ function Header({
             <NavLink
               to="/category/laptop"
               className={navClassName}
-              onClick={() => applyCategory("laptop")}
+              onClick={() =>
+                applyCategory("laptop")
+              }
             >
               Laptop
             </NavLink>
@@ -575,7 +904,11 @@ function Header({
             <NavLink
               to="/category/dien-thoai"
               className={navClassName}
-              onClick={() => applyCategory("dien-thoai")}
+              onClick={() =>
+                applyCategory(
+                  "dien-thoai",
+                )
+              }
             >
               Điện thoại
             </NavLink>
@@ -583,7 +916,11 @@ function Header({
             <NavLink
               to="/category/phu-kien"
               className={navClassName}
-              onClick={() => applyCategory("phu-kien")}
+              onClick={() =>
+                applyCategory(
+                  "phu-kien",
+                )
+              }
             >
               Phụ kiện
             </NavLink>
@@ -598,14 +935,24 @@ function Header({
 
             <NavLink
               to="/ai-search"
-              className={({ isActive }) =>
+              className={({
+                isActive,
+              }) =>
                 `gx-header__nav-link gx-header__nav-ai ${
-                  isActive ? "is-active" : ""
+                  isActive
+                    ? "is-active"
+                    : ""
                 }`
               }
               onClick={closeMenus}
             >
-              <FontAwesomeIcon icon={["fas", "robot"]} />
+              <FontAwesomeIcon
+                icon={[
+                  "fas",
+                  "robot",
+                ]}
+              />
+
               AI Search
             </NavLink>
           </div>

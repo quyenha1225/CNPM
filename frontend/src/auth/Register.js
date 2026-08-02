@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -109,10 +109,9 @@ function Register() {
       <section className="auth-shell">
         <aside className="auth-visual-panel">
           <span className="auth-kicker">ElectroShop Member</span>
-          <h1>Tạo tài khoản để lưu giỏ hàng và nhận gợi ý phù hợp hơn</h1>
+          <h1>Đăng kí tài khoản để sử dụng dịch vụ </h1>
           <p>
-            Thông tin được kiểm tra ở cả giao diện và NestJS. Email, số điện
-            thoại trùng hoặc mật khẩu yếu sẽ bị backend từ chối.
+            Thông tin an toàn và dễ dàng sử dụng
           </p>
         </aside>
 

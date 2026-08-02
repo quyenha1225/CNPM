@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
+import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { toast } from "../utils/Toast";
 import ImageAlt from "../nillkin-case-1.jpg";
@@ -26,6 +26,10 @@ function FeatureProduct({
 }) {
   const navigate = useNavigate();
   const { addToCart } = useCart();
+const {
+  isAuthenticated,
+  sessionLoading,
+} = useAuth();
 
   const [actionLoading, setActionLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -75,6 +79,37 @@ function FeatureProduct({
     product.description ||
     product.detail ||
     "Sản phẩm công nghệ chính hãng, phù hợp cho học tập, làm việc và giải trí.";
+
+function requireAuthentication(intent = "cart") {
+  if (sessionLoading) {
+    toast.warning(
+      "Hệ thống đang kiểm tra phiên đăng nhập",
+      2000,
+    );
+
+    return false;
+  }
+
+  if (isAuthenticated) {
+    return true;
+  }
+
+  toast.warning(
+    intent === "buy"
+      ? "Vui lòng đăng nhập trước khi mua hàng"
+      : "Vui lòng đăng nhập trước khi thêm vào giỏ",
+    2600,
+  );
+
+  navigate("/login", {
+    state: {
+      from: productUrl,
+      intent,
+    },
+  });
+
+  return false;
+}
 
   async function buildCartProduct() {
     let detail = product;
@@ -174,15 +209,24 @@ function FeatureProduct({
     };
   }
 
-  async function addProductToCart({
-    showSuccess = true,
-  } = {}) {
-    if (actionLoading) return false;
+async function addProductToCart({
+  showSuccess = true,
+  intent = "cart",
+} = {}) {
+  if (
+    !requireAuthentication(intent) ||
+    actionLoading
+  ) {
+    return false;
+  }
 
-    if (isOutOfStock) {
-      toast.error("Sản phẩm hiện đã hết hàng");
-      return false;
-    }
+  if (isOutOfStock) {
+    toast.error(
+      "Sản phẩm hiện đã hết hàng",
+    );
+
+    return false;
+  }
 
     setActionLoading(true);
 
@@ -213,15 +257,16 @@ function FeatureProduct({
     }
   }
 
-  async function handleBuyNow() {
-    const added = await addProductToCart({
-      showSuccess: false,
-    });
+async function handleBuyNow() {
+  const added = await addProductToCart({
+    showSuccess: false,
+    intent: "buy",
+  });
 
-    if (added) {
-      navigate("/payment");
-    }
+  if (added) {
+    navigate("/payment");
   }
+}
 
   return (
     <article className="gx2-product-card">
@@ -303,14 +348,23 @@ function FeatureProduct({
           </Link>
 
           <button
-            type="button"
-            className="gx2-card-action gx2-card-action--cart"
-            onClick={() => addProductToCart()}
-            disabled={isOutOfStock || actionLoading}
-          >
-            {actionLoading ? "Đang xử lý..." : "Thêm vào giỏ"}
-          </button>
-
+  type="button"
+  className="gx2-card-action gx2-card-action--cart"
+  onClick={() =>
+    addProductToCart({
+      intent: "cart",
+    })
+  }
+  disabled={
+    isOutOfStock ||
+    actionLoading ||
+    sessionLoading
+  }
+>
+  {actionLoading
+    ? "Đang xử lý..."
+    : "Thêm vào giỏ"}
+</button>
           <button
             type="button"
             className="gx2-card-action gx2-card-action--buy"

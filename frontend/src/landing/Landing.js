@@ -214,10 +214,6 @@ function Landing() {
                     Sản phẩm ưu đãi
                   </span>
                   <h2>Những sản phẩm đang được mua nhiều</h2>
-                  <p>
-                    Thứ hạng được tổng hợp trực tiếp từ số lượng sản phẩm
-                    trong các đơn hàng đã hoàn tất.
-                  </p>
                 </div>
 
                 <Link to="/products" className="gx2-section__link">

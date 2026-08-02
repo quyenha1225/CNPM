@@ -68,177 +68,222 @@ export class ProductsService {
     }));
   }
 
-  async findOne(productId: number) {
-    const rows = await this.dataSource.query(
-      `
-      SELECT
-        p.product_id AS id,
-        p.product_name AS name,
-        p.product_slug AS slug,
-        p.product_description AS description,
-        p.base_price AS price,
-        p.warranty_months AS warrantyMonths,
+async findOne(productId: number) {
+  const rows = await this.dataSource.query(
+    `
+    SELECT
+      p.product_id AS id,
+      p.product_name AS name,
+      p.product_slug AS slug,
+      p.product_description AS description,
+      p.base_price AS price,
+      p.warranty_months AS warrantyMonths,
 
-        c.category_name AS category,
-        c.category_slug AS categorySlug,
+      c.category_name AS category,
+      c.category_slug AS categorySlug,
 
-        b.brand_name AS brand,
+      COALESCE(b.brand_name, 'Gearxin') AS brand,
 
+      COALESCE(
         (
-          SELECT pi_sub.image_url
-          FROM product_images pi_sub
-          WHERE pi_sub.product_id = p.product_id
-            AND pi_sub.is_thumbnail = TRUE
+          SELECT pi_thumbnail.image_url
+          FROM product_images pi_thumbnail
+          WHERE pi_thumbnail.product_id = p.product_id
+            AND pi_thumbnail.is_thumbnail = TRUE
+          ORDER BY
+            pi_thumbnail.sort_order ASC,
+            pi_thumbnail.image_id ASC
           LIMIT 1
-        ) AS image_url,
-
-        p.average_rating AS rating,
-        p.review_count AS reviewCount,
-
-        0 AS percent_off,
-
-        COALESCE(vps.current_stock, 0)
-          AS stock_quantity
-
-      FROM products p
-
-      LEFT JOIN categories c
-        ON c.category_id = p.category_id
-
-      LEFT JOIN brands b
-        ON b.brand_id = p.brand_id
-
-      LEFT JOIN vw_product_stock vps
-        ON vps.product_id = p.product_id
-
-      WHERE p.product_id = ?
-        AND p.product_status = 'ACTIVE'
-
-      LIMIT 1
-      `,
-      [productId],
-    );
-
-    const product = rows[0];
-
-    if (!product) {
-      return null;
-    }
-
-    product.id = Number(product.id);
-    product.price = Number(product.price ?? 0);
-    product.rating = Number(product.rating ?? 0);
-    product.reviewCount = Number(
-      product.reviewCount ?? 0,
-    );
-    product.percent_off = Number(
-      product.percent_off ?? 0,
-    );
-    product.stock_quantity = Number(
-      product.stock_quantity ?? 0,
-    );
-
-    const specifications =
-      await this.dataSource.query(
-        `
-        SELECT
-          pa.attribute_id,
-          pa.attribute_code,
-          pa.attribute_name,
-          pa.attribute_unit,
-          pa.spec_group,
-          pa.display_order,
-          pa.is_highlight,
-
-          pav.attribute_value,
-          pav.numeric_value,
-          pav.boolean_value,
-          pav.normalized_value
-
-        FROM product_attribute_values pav
-
-        JOIN product_attributes pa
-          ON pa.attribute_id = pav.attribute_id
-
-        WHERE pav.product_id = ?
-
-        ORDER BY
-          pa.spec_group ASC,
-          pa.display_order ASC,
-          pa.attribute_id ASC
-        `,
-        [productId],
-      );
-
-    const variants = await this.dataSource.query(
-      `
-      SELECT
-        pv.variant_id,
-        pv.variant_name,
-        pv.sku,
-        pv.color,
-        pv.ram_size,
-        pv.storage_size,
-        pv.gpu_option,
-        pv.cpu_option,
-        pv.additional_price,
-        pv.is_default,
-
-        COALESCE(
-          vi.stock_quantity,
-          0
-        ) AS stock_quantity,
-
-        COALESCE(
-          vi.reserved_quantity,
-          0
-        ) AS reserved_quantity,
-
-        GREATEST(
-          COALESCE(vi.stock_quantity, 0)
-          -
-          COALESCE(vi.reserved_quantity, 0),
-          0
-        ) AS available_quantity
-
-      FROM product_variants pv
-
-      LEFT JOIN variant_inventory vi
-        ON vi.variant_id = pv.variant_id
-
-      WHERE pv.product_id = ?
-        AND pv.variant_status = 'ACTIVE'
-
-      ORDER BY
-        pv.is_default DESC,
-        pv.variant_id ASC
-      `,
-      [productId],
-    );
-
-    product.specifications = specifications;
-
-    product.variants = variants.map(
-      (variant: any) => ({
-        ...variant,
-        variant_id: Number(variant.variant_id),
-        additional_price: Number(
-          variant.additional_price ?? 0,
         ),
-        stock_quantity: Number(
-          variant.stock_quantity ?? 0,
+        (
+          SELECT pi_first.image_url
+          FROM product_images pi_first
+          WHERE pi_first.product_id = p.product_id
+          ORDER BY
+            pi_first.sort_order ASC,
+            pi_first.image_id ASC
+          LIMIT 1
         ),
-        reserved_quantity: Number(
-          variant.reserved_quantity ?? 0,
+        ''
+      ) AS image_url,
+
+      COALESCE(p.average_rating, 0) AS rating,
+      COALESCE(p.average_rating, 0) AS average_rating,
+
+      COALESCE(p.review_count, 0) AS reviewCount,
+      COALESCE(p.review_count, 0) AS review_count,
+
+      0 AS percent_off,
+
+      COALESCE(vps.current_stock, 0) AS stock_quantity
+
+    FROM products p
+
+    LEFT JOIN categories c
+      ON c.category_id = p.category_id
+
+    LEFT JOIN brands b
+      ON b.brand_id = p.brand_id
+
+    LEFT JOIN vw_product_stock vps
+      ON vps.product_id = p.product_id
+
+    WHERE p.product_id = ?
+      AND p.product_status = 'ACTIVE'
+
+    LIMIT 1
+    `,
+    [productId],
+  );
+
+  if (!rows.length) {
+    return null;
+  }
+
+  const product = rows[0];
+
+  /*
+   * Database hiện tại chỉ có:
+   * - pav.attribute_value
+   *
+   * Không có:
+   * - pav.numeric_value
+   * - pav.boolean_value
+   * - pav.normalized_value
+   * - pa.attribute_code
+   */
+  const specificationRows = await this.dataSource.query(
+    `
+    SELECT
+      pa.attribute_id,
+      pa.attribute_name,
+      pa.attribute_unit,
+      pa.spec_group,
+      pa.display_order,
+      pa.is_highlight,
+      pav.attribute_value
+
+    FROM product_attribute_values pav
+
+    INNER JOIN product_attributes pa
+      ON pa.attribute_id = pav.attribute_id
+
+    WHERE pav.product_id = ?
+
+    ORDER BY
+      COALESCE(pa.spec_group, 'Thông số khác') ASC,
+      pa.display_order ASC,
+      pa.attribute_id ASC
+    `,
+    [productId],
+  );
+
+  const variantRows = await this.dataSource.query(
+    `
+    SELECT
+      pv.variant_id,
+      pv.variant_name,
+      pv.sku,
+      pv.color,
+      pv.ram_size,
+      pv.storage_size,
+      pv.gpu_option,
+      pv.cpu_option,
+      pv.additional_price,
+      pv.is_default,
+
+      COALESCE(
+        vi.stock_quantity,
+        0
+      ) AS stock_quantity,
+
+      COALESCE(
+        vi.reserved_quantity,
+        0
+      ) AS reserved_quantity,
+
+      GREATEST(
+        COALESCE(vi.stock_quantity, 0)
+        - COALESCE(vi.reserved_quantity, 0),
+        0
+      ) AS available_quantity
+
+    FROM product_variants pv
+
+    LEFT JOIN variant_inventory vi
+      ON vi.variant_id = pv.variant_id
+
+    WHERE pv.product_id = ?
+      AND pv.variant_status = 'ACTIVE'
+
+    ORDER BY
+      pv.is_default DESC,
+      pv.variant_id ASC
+    `,
+    [productId],
+  );
+
+  return {
+    ...product,
+
+    id: Number(product.id),
+    price: Number(product.price ?? 0),
+    warrantyMonths: Number(product.warrantyMonths ?? 0),
+
+    rating: Number(product.rating ?? 0),
+    average_rating: Number(product.average_rating ?? 0),
+
+    reviewCount: Number(product.reviewCount ?? 0),
+    review_count: Number(product.review_count ?? 0),
+
+    percent_off: Number(product.percent_off ?? 0),
+    stock_quantity: Number(product.stock_quantity ?? 0),
+
+    specifications: specificationRows.map(
+      (specification: any) => ({
+        ...specification,
+
+        attribute_id: Number(
+          specification.attribute_id,
         ),
-        available_quantity: Number(
-          variant.available_quantity ?? 0,
+
+        display_order: Number(
+          specification.display_order ?? 0,
+        ),
+
+        is_highlight: Boolean(
+          Number(specification.is_highlight ?? 0),
         ),
       }),
-    );
+    ),
 
-    return product;
-  }
+    variants: variantRows.map((variant: any) => ({
+      ...variant,
+
+      variant_id: Number(variant.variant_id),
+
+      additional_price: Number(
+        variant.additional_price ?? 0,
+      ),
+
+      is_default: Boolean(
+        Number(variant.is_default ?? 0),
+      ),
+
+      stock_quantity: Number(
+        variant.stock_quantity ?? 0,
+      ),
+
+      reserved_quantity: Number(
+        variant.reserved_quantity ?? 0,
+      ),
+
+      available_quantity: Number(
+        variant.available_quantity ?? 0,
+      ),
+    })),
+  };
+}
 
   async getRecommendedProducts(
     productId: number,

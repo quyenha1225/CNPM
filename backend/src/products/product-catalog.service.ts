@@ -21,6 +21,19 @@ type RawProductRow = {
   totalSold: string | number | null;
 };
 
+type CategoryFacetRow = {
+  id: string | number;
+  name: string;
+  slug: string;
+  productCount: string | number;
+};
+
+type BrandFacetRow = {
+  id: string | number;
+  name: string;
+  productCount: string | number;
+};
+
 @Injectable()
 export class ProductCatalogService {
   constructor(private readonly dataSource: DataSource) {}
@@ -28,7 +41,7 @@ export class ProductCatalogService {
   /**
    * GET /api/products/catalog
    *
-   * Hỗ trợ:
+   * Query hỗ trợ:
    * - page
    * - limit
    * - category
@@ -39,7 +52,11 @@ export class ProductCatalogService {
    * - sort
    */
   async findCatalog(query: CatalogQueryDto) {
-    const requestedPage = Math.max(Number(query.page) || 1, 1);
+    const requestedPage = Math.max(
+      Number(query.page) || 1,
+      1,
+    );
+
     const limit = Math.min(
       Math.max(Number(query.limit) || 12, 1),
       48,
@@ -57,7 +74,10 @@ export class ProductCatalogService {
     const search = query.search?.trim();
 
     if (category) {
-      whereConditions.push('c.category_slug = ?');
+      whereConditions.push(
+        'c.category_slug = ?',
+      );
+
       params.push(category);
     }
 
@@ -65,6 +85,7 @@ export class ProductCatalogService {
       whereConditions.push(
         'LOWER(TRIM(b.brand_name)) = LOWER(TRIM(?))',
       );
+
       params.push(brand);
     }
 
@@ -101,39 +122,47 @@ export class ProductCatalogService {
         : undefined;
 
     if (
-      minPrice !== undefined &&
-      Number.isFinite(minPrice)
+      minPrice === undefined ||
+      !Number.isFinite(minPrice)
     ) {
-      minPrice = Math.max(minPrice, 0);
-    } else {
       minPrice = undefined;
+    } else {
+      minPrice = Math.max(minPrice, 0);
     }
 
     if (
-      maxPrice !== undefined &&
-      Number.isFinite(maxPrice)
+      maxPrice === undefined ||
+      !Number.isFinite(maxPrice)
     ) {
-      maxPrice = Math.max(maxPrice, 0);
-    } else {
       maxPrice = undefined;
+    } else {
+      maxPrice = Math.max(maxPrice, 0);
     }
 
-    // Nếu frontend gửi min lớn hơn max thì tự đổi lại.
     if (
       minPrice !== undefined &&
       maxPrice !== undefined &&
       minPrice > maxPrice
     ) {
-      [minPrice, maxPrice] = [maxPrice, minPrice];
+      [minPrice, maxPrice] = [
+        maxPrice,
+        minPrice,
+      ];
     }
 
     if (minPrice !== undefined) {
-      whereConditions.push('p.base_price >= ?');
+      whereConditions.push(
+        'p.base_price >= ?',
+      );
+
       params.push(minPrice);
     }
 
     if (maxPrice !== undefined) {
-      whereConditions.push('p.base_price <= ?');
+      whereConditions.push(
+        'p.base_price <= ?',
+      );
+
       params.push(maxPrice);
     }
 
@@ -177,50 +206,56 @@ export class ProductCatalogService {
     };
 
     const sortKey = query.sort || 'newest';
+
     const orderSql =
       sortMap[sortKey] || sortMap.newest;
 
     /*
-     * Đếm tổng số sản phẩm sau khi lọc.
+     * Đếm tổng sản phẩm sau khi lọc.
      */
-    const countRows: Array<{ total: string | number }> =
-      await this.dataSource.query(
-        `
-        SELECT
-          COUNT(DISTINCT p.product_id) AS total
-        FROM products p
-        INNER JOIN categories c
-          ON c.category_id = p.category_id
-        LEFT JOIN brands b
-          ON b.brand_id = p.brand_id
-        ${whereSql}
-        `,
-        params,
-      );
+    const countRows: Array<{
+      total: string | number;
+    }> = await this.dataSource.query(
+      `
+      SELECT
+        COUNT(DISTINCT p.product_id) AS total
 
-    const total = Number(countRows?.[0]?.total || 0);
+      FROM products p
+
+      INNER JOIN categories c
+        ON c.category_id = p.category_id
+
+      LEFT JOIN brands b
+        ON b.brand_id = p.brand_id
+
+      ${whereSql}
+      `,
+      params,
+    );
+
+    const total = Number(
+      countRows?.[0]?.total || 0,
+    );
 
     const totalPages = Math.max(
       Math.ceil(total / limit),
       1,
     );
 
-    // Nếu page vượt quá tổng số trang, tự quay về trang cuối.
-    const page = Math.min(requestedPage, totalPages);
+    const page = Math.min(
+      requestedPage,
+      totalPages,
+    );
+
     const offset = (page - 1) * limit;
 
     /*
-     * Truy vấn danh sách sản phẩm.
+     * Lấy danh sách sản phẩm.
      *
-     * image_row:
-     * - Ưu tiên ảnh thumbnail.
-     * - Nếu không có thumbnail thì lấy một ảnh bất kỳ.
-     *
-     * stock_row:
-     * - Tồn khả dụng = stock_quantity - reserved_quantity.
-     *
-     * sales:
-     * - Chỉ tính các đơn DELIVERED.
+     * Quan trọng:
+     * Tồn kho được đọc từ vw_product_stock.current_stock.
+     * View này tổng hợp được cả sản phẩm có variant và
+     * sản phẩm không có variant.
      */
     const rows: RawProductRow[] =
       await this.dataSource.query(
@@ -261,7 +296,7 @@ export class ProductCatalogService {
           ) AS image_url,
 
           COALESCE(
-            stock_row.stock_quantity,
+            vps.current_stock,
             0
           ) AS stock_quantity,
 
@@ -299,51 +334,40 @@ export class ProductCatalogService {
           GROUP BY
             pi.product_id
         ) image_row
-          ON image_row.product_id = p.product_id
+          ON image_row.product_id =
+             p.product_id
 
-        LEFT JOIN (
-          SELECT
-            pv.product_id,
-
-            SUM(
-              GREATEST(
-                COALESCE(vi.stock_quantity, 0)
-                - COALESCE(vi.reserved_quantity, 0),
-                0
-              )
-            ) AS stock_quantity
-
-          FROM product_variants pv
-
-          LEFT JOIN variant_inventory vi
-            ON vi.variant_id = pv.variant_id
-
-          WHERE pv.variant_status = 'ACTIVE'
-
-          GROUP BY
-            pv.product_id
-        ) stock_row
-          ON stock_row.product_id = p.product_id
+        LEFT JOIN vw_product_stock vps
+          ON vps.product_id =
+             p.product_id
 
         LEFT JOIN (
           SELECT
             oi.product_id,
-            SUM(oi.ordered_quantity) AS total_sold
+
+            SUM(
+              oi.ordered_quantity
+            ) AS total_sold
 
           FROM order_items oi
 
           INNER JOIN orders o
-            ON o.order_id = oi.order_id
+            ON o.order_id =
+               oi.order_id
 
           INNER JOIN order_statuses os
-            ON os.order_status_id = o.order_status_id
+            ON os.order_status_id =
+               o.order_status_id
 
-          WHERE os.order_status_code = 'DELIVERED'
+          WHERE
+            os.order_status_code =
+              'DELIVERED'
 
           GROUP BY
             oi.product_id
         ) sales
-          ON sales.product_id = p.product_id
+          ON sales.product_id =
+             p.product_id
 
         ${whereSql}
 
@@ -352,14 +376,15 @@ export class ProductCatalogService {
 
         LIMIT ? OFFSET ?
         `,
-        [...params, limit, offset],
+        [
+          ...params,
+          limit,
+          offset,
+        ],
       );
 
     /*
-     * Dữ liệu sidebar:
-     * - Danh mục và số sản phẩm.
-     * - Thương hiệu và số sản phẩm.
-     * - Tổng sản phẩm ACTIVE.
+     * Dữ liệu bộ lọc bên sidebar.
      */
     const [
       categoryRows,
@@ -384,9 +409,12 @@ export class ProductCatalogService {
         FROM categories c
 
         LEFT JOIN products p
-          ON p.category_id = c.category_id
+          ON p.category_id =
+             c.category_id
 
-        WHERE c.category_status = 'ACTIVE'
+        WHERE
+          c.category_status =
+            'ACTIVE'
 
         GROUP BY
           c.category_id,
@@ -415,9 +443,12 @@ export class ProductCatalogService {
         FROM brands b
 
         LEFT JOIN products p
-          ON p.brand_id = b.brand_id
+          ON p.brand_id =
+             b.brand_id
 
-        WHERE b.brand_status = 'ACTIVE'
+        WHERE
+          b.brand_status =
+            'ACTIVE'
 
         GROUP BY
           b.brand_id,
@@ -434,8 +465,12 @@ export class ProductCatalogService {
         `
         SELECT
           COUNT(*) AS total
+
         FROM products
-        WHERE product_status = 'ACTIVE'
+
+        WHERE
+          product_status =
+            'ACTIVE'
         `,
       ),
     ]);
@@ -459,35 +494,26 @@ export class ProductCatalogService {
           totalProductRows?.[0]?.total || 0,
         ),
 
-        categories: categoryRows.map(
-          (row: {
-            id: string | number;
-            name: string;
-            slug: string;
-            productCount: string | number;
-          }) => ({
-            id: Number(row.id),
-            name: row.name,
-            slug: row.slug,
-            productCount: Number(
-              row.productCount || 0,
-            ),
-          }),
-        ),
+        categories: (
+          categoryRows as CategoryFacetRow[]
+        ).map((row) => ({
+          id: Number(row.id),
+          name: row.name,
+          slug: row.slug,
+          productCount: Number(
+            row.productCount || 0,
+          ),
+        })),
 
-        brands: brandRows.map(
-          (row: {
-            id: string | number;
-            name: string;
-            productCount: string | number;
-          }) => ({
-            id: Number(row.id),
-            name: row.name,
-            productCount: Number(
-              row.productCount || 0,
-            ),
-          }),
-        ),
+        brands: (
+          brandRows as BrandFacetRow[]
+        ).map((row) => ({
+          id: Number(row.id),
+          name: row.name,
+          productCount: Number(
+            row.productCount || 0,
+          ),
+        })),
       },
     };
   }
@@ -495,9 +521,8 @@ export class ProductCatalogService {
   /**
    * GET /api/products/top-selling?limit=10
    *
-   * Sản phẩm có lượt bán sẽ đứng trước.
-   * Nếu chưa có đơn DELIVERED, API vẫn trả sản phẩm ACTIVE
-   * với totalSold = 0 để Landing không bị trống.
+   * Vẫn trả sản phẩm ACTIVE nếu chưa có đơn DELIVERED.
+   * Khi đó totalSold bằng 0.
    */
   async getTopSelling(limit = 10) {
     const safeLimit = Math.min(
@@ -544,7 +569,7 @@ export class ProductCatalogService {
           ) AS image_url,
 
           COALESCE(
-            stock_row.stock_quantity,
+            vps.current_stock,
             0
           ) AS stock_quantity,
 
@@ -556,12 +581,16 @@ export class ProductCatalogService {
         FROM products p
 
         INNER JOIN categories c
-          ON c.category_id = p.category_id
-         AND c.category_status = 'ACTIVE'
+          ON c.category_id =
+             p.category_id
+         AND c.category_status =
+             'ACTIVE'
 
         LEFT JOIN brands b
-          ON b.brand_id = p.brand_id
-         AND b.brand_status = 'ACTIVE'
+          ON b.brand_id =
+             p.brand_id
+         AND b.brand_status =
+             'ACTIVE'
 
         LEFT JOIN (
           SELECT
@@ -583,58 +612,61 @@ export class ProductCatalogService {
           GROUP BY
             pi.product_id
         ) image_row
-          ON image_row.product_id = p.product_id
+          ON image_row.product_id =
+             p.product_id
 
-        LEFT JOIN (
-          SELECT
-            pv.product_id,
-
-            SUM(
-              GREATEST(
-                COALESCE(vi.stock_quantity, 0)
-                - COALESCE(vi.reserved_quantity, 0),
-                0
-              )
-            ) AS stock_quantity
-
-          FROM product_variants pv
-
-          LEFT JOIN variant_inventory vi
-            ON vi.variant_id = pv.variant_id
-
-          WHERE pv.variant_status = 'ACTIVE'
-
-          GROUP BY
-            pv.product_id
-        ) stock_row
-          ON stock_row.product_id = p.product_id
+        LEFT JOIN vw_product_stock vps
+          ON vps.product_id =
+             p.product_id
 
         LEFT JOIN (
           SELECT
             oi.product_id,
-            SUM(oi.ordered_quantity) AS total_sold
+
+            SUM(
+              oi.ordered_quantity
+            ) AS total_sold
 
           FROM order_items oi
 
           INNER JOIN orders o
-            ON o.order_id = oi.order_id
+            ON o.order_id =
+               oi.order_id
 
           INNER JOIN order_statuses os
-            ON os.order_status_id = o.order_status_id
+            ON os.order_status_id =
+               o.order_status_id
 
-          WHERE os.order_status_code = 'DELIVERED'
+          WHERE
+            os.order_status_code =
+              'DELIVERED'
 
           GROUP BY
             oi.product_id
         ) sales
-          ON sales.product_id = p.product_id
+          ON sales.product_id =
+             p.product_id
 
-        WHERE p.product_status = 'ACTIVE'
+        WHERE
+          p.product_status =
+            'ACTIVE'
 
         ORDER BY
-          COALESCE(sales.total_sold, 0) DESC,
-          COALESCE(p.average_rating, 0) DESC,
-          COALESCE(p.review_count, 0) DESC,
+          COALESCE(
+            sales.total_sold,
+            0
+          ) DESC,
+
+          COALESCE(
+            p.average_rating,
+            0
+          ) DESC,
+
+          COALESCE(
+            p.review_count,
+            0
+          ) DESC,
+
           p.created_at DESC,
           p.product_id DESC
 
@@ -649,22 +681,29 @@ export class ProductCatalogService {
   }
 
   /**
-   * Chuẩn hóa kiểu dữ liệu MySQL trả về.
-   * Decimal và BIGINT thường được mysql2 trả dưới dạng string.
+   * MySQL có thể trả DECIMAL/BIGINT dưới dạng string.
+   * Chuẩn hóa và trả nhiều alias để frontend cũ/mới đều đọc được.
    */
-  private normalizeProductRow(row: RawProductRow) {
+  private normalizeProductRow(
+    row: RawProductRow,
+  ) {
     const id = Number(row.id || 0);
     const price = Number(row.price || 0);
     const rating = Number(row.rating || 0);
+
     const reviewCount = Number(
       row.reviewCount || 0,
     );
-    const stockQuantity = Number(
-      row.stock_quantity || 0,
+
+    const stockQuantity = Math.max(
+      Number(row.stock_quantity || 0),
+      0,
     );
+
     const totalSold = Number(
       row.totalSold || 0,
     );
+
     const image = row.image_url || '';
 
     return {
@@ -695,13 +734,20 @@ export class ProductCatalogService {
       category: row.category,
 
       brand: row.brand || 'Gearxin',
-      brand_name: row.brand || 'Gearxin',
+      brand_name:
+        row.brand || 'Gearxin',
 
       image,
       image_url: image,
 
+      /*
+       * Trả các tên tương thích cho mọi component.
+       */
+      stock: stockQuantity,
       stock_quantity: stockQuantity,
       stockQuantity,
+      current_stock: stockQuantity,
+      available_quantity: stockQuantity,
 
       totalSold,
       total_sold: totalSold,

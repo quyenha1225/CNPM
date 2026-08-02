@@ -1,3 +1,15 @@
+-- ============================================================
+-- CNPM / ELECTROSHOP DATABASE
+-- FILE 01: CREATE DATABASE, TABLES, VIEWS, TRIGGERS
+--
+-- THỨ TỰ CHẠY:
+--   1) 01_create_tables.sql
+--   2) 02_insert_data.sql
+--   3) 03_ai_setup.sql
+--
+-- CẢNH BÁO: file này DROP DATABASE electroshop_db để tạo mới sạch.
+-- ============================================================
+
 -- =========================================================
 -- Xoa database cu (neu co) de dam bao chay lai file nay luon sach,
 -- tranh cac loi "already exists" / "Duplicate column" khi chay lai.
@@ -178,19 +190,24 @@ CREATE TABLE IF NOT EXISTS product_images (
 
 CREATE TABLE IF NOT EXISTS product_attributes (
     attribute_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    attribute_code VARCHAR(100) NULL,
     attribute_name VARCHAR(100) NOT NULL UNIQUE,
-    attribute_unit VARCHAR(50)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    spec_group VARCHAR(100) NULL,
+    attribute_unit VARCHAR(50) NULL,
+    value_type VARCHAR(30) NOT NULL DEFAULT 'TEXT',
+    display_order INT NOT NULL DEFAULT 0,
+    is_highlight BOOLEAN NOT NULL DEFAULT FALSE,
+    is_filterable BOOLEAN NOT NULL DEFAULT TRUE,
+    is_ai_searchable BOOLEAN NOT NULL DEFAULT TRUE,
+    attribute_description VARCHAR(255) NULL,
 
--- spec_group: gom nhom thong so khi hien thi (vd "Bo xu ly & Bo nho",
---   "Man hinh", "Ket noi", "Thiet ke & Trong luong"...)
--- display_order: thu tu hien thi trong tung nhom (so nho hien truoc)
--- is_highlight: TRUE = thong so duoc dua len hang icon noi bat dau
---   trang chi tiet san pham (vd CPU, RAM, O cung, Man hinh)
-ALTER TABLE product_attributes
-ADD COLUMN spec_group VARCHAR(100) NULL AFTER attribute_name,
-ADD COLUMN display_order INT NOT NULL DEFAULT 0 AFTER attribute_unit,
-ADD COLUMN is_highlight BOOLEAN NOT NULL DEFAULT FALSE AFTER display_order;
+    UNIQUE KEY uq_product_attributes_code (attribute_code),
+
+    INDEX idx_product_attributes_ai (
+        is_ai_searchable,
+        is_filterable
+    )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS category_attributes (
     category_id BIGINT UNSIGNED NOT NULL,
@@ -210,6 +227,9 @@ CREATE TABLE IF NOT EXISTS product_attribute_values (
     product_id BIGINT UNSIGNED NOT NULL,
     attribute_id BIGINT UNSIGNED NOT NULL,
     attribute_value VARCHAR(255) NOT NULL,
+    numeric_value DECIMAL(18,4) NULL,
+    boolean_value BOOLEAN NULL,
+    normalized_value VARCHAR(255) NULL,
     PRIMARY KEY (product_id, attribute_id),
 
     CONSTRAINT fk_product_attribute_values_product
@@ -218,7 +238,17 @@ CREATE TABLE IF NOT EXISTS product_attribute_values (
 
     CONSTRAINT fk_product_attribute_values_attribute
         FOREIGN KEY (attribute_id) REFERENCES product_attributes(attribute_id)
-        ON UPDATE CASCADE ON DELETE RESTRICT
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+
+    INDEX idx_product_attribute_numeric (
+        attribute_id,
+        numeric_value
+    ),
+
+    INDEX idx_product_attribute_normalized (
+        attribute_id,
+        normalized_value
+    )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS product_variants (
@@ -624,10 +654,19 @@ CREATE TABLE IF NOT EXISTS ai_search_logs (
     ai_search_log_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     customer_id BIGINT UNSIGNED NULL,
     query_text TEXT NOT NULL,
+    detected_intent VARCHAR(100) NULL,
     detected_category_id BIGINT UNSIGNED NULL,
-    detected_min_price DECIMAL(15,2),
-    detected_max_price DECIMAL(15,2),
-    detected_purpose VARCHAR(255),
+    detected_product_type VARCHAR(100) NULL,
+    detected_brand_id BIGINT UNSIGNED NULL,
+    detected_min_price DECIMAL(15,2) NULL,
+    detected_max_price DECIMAL(15,2) NULL,
+    detected_purpose VARCHAR(255) NULL,
+    parsed_requirements JSON NULL,
+    ai_provider VARCHAR(50) NULL,
+    ai_model VARCHAR(100) NULL,
+    processing_time_ms INT UNSIGNED NULL,
+    search_status VARCHAR(30) NOT NULL DEFAULT 'SUCCESS',
+    error_message VARCHAR(500) NULL,
     searched_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_ai_search_logs_user
@@ -638,6 +677,19 @@ CREATE TABLE IF NOT EXISTS ai_search_logs (
         FOREIGN KEY (detected_category_id) REFERENCES categories(category_id)
         ON UPDATE CASCADE ON DELETE SET NULL,
 
+    CONSTRAINT fk_ai_search_logs_brand
+        FOREIGN KEY (detected_brand_id) REFERENCES brands(brand_id)
+        ON UPDATE CASCADE ON DELETE SET NULL,
+
+    INDEX idx_ai_search_logs_customer_time (
+        customer_id,
+        searched_at
+    ),
+
+    INDEX idx_ai_search_logs_category (
+        detected_category_id
+    ),
+
     CHECK (detected_min_price IS NULL OR detected_min_price >= 0),
     CHECK (detected_max_price IS NULL OR detected_max_price >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -646,7 +698,10 @@ CREATE TABLE IF NOT EXISTS ai_search_results (
     ai_search_log_id BIGINT UNSIGNED NOT NULL,
     product_id BIGINT UNSIGNED NOT NULL,
     result_rank INT NOT NULL,
-    match_score DECIMAL(6,4),
+    match_score DECIMAL(7,4) NULL,
+    match_reasons JSON NULL,
+    matched_attributes JSON NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (ai_search_log_id, product_id),
 
     CONSTRAINT fk_ai_search_results_log
@@ -657,9 +712,128 @@ CREATE TABLE IF NOT EXISTS ai_search_results (
         FOREIGN KEY (product_id) REFERENCES products(product_id)
         ON UPDATE CASCADE ON DELETE CASCADE,
 
+    INDEX idx_ai_search_results_rank (
+        ai_search_log_id,
+        result_rank
+    ),
+
+    INDEX idx_ai_search_results_score (
+        match_score
+    ),
+
     CHECK (result_rank > 0),
     CHECK (match_score IS NULL OR match_score >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+-- =========================================================
+-- 9.1 PASSWORD RESET OTP
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS password_reset_otps (
+    reset_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    otp_hash CHAR(64) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    verified_at DATETIME NULL,
+    used_at DATETIME NULL,
+    attempt_count INT UNSIGNED NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_password_reset_otp_user
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    INDEX idx_password_reset_user_created (
+        user_id,
+        created_at
+    ),
+
+    INDEX idx_password_reset_expiry (
+        expires_at
+    )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================
+-- 9.2 AI CONVERSATION TABLES
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS ai_conversations (
+    conversation_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    customer_id BIGINT UNSIGNED NULL,
+    conversation_status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
+    conversation_title VARCHAR(255) NULL,
+    ai_provider VARCHAR(50) NULL,
+    ai_model VARCHAR(100) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+    closed_at DATETIME NULL,
+
+    CONSTRAINT fk_ai_conversations_customer
+        FOREIGN KEY (customer_id) REFERENCES users(user_id)
+        ON UPDATE CASCADE ON DELETE SET NULL,
+
+    INDEX idx_ai_conversations_customer_status (
+        customer_id,
+        conversation_status
+    ),
+
+    INDEX idx_ai_conversations_updated_at (
+        updated_at
+    )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ai_messages (
+    message_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    conversation_id BIGINT UNSIGNED NOT NULL,
+    sender_type VARCHAR(30) NOT NULL,
+    message_content TEXT NOT NULL,
+    detected_intent VARCHAR(100) NULL,
+    tool_name VARCHAR(100) NULL,
+    tool_arguments JSON NULL,
+    tool_result JSON NULL,
+    token_usage INT UNSIGNED NULL,
+    processing_time_ms INT UNSIGNED NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_ai_messages_conversation
+        FOREIGN KEY (conversation_id) REFERENCES ai_conversations(conversation_id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    INDEX idx_ai_messages_conversation_time (
+        conversation_id,
+        created_at
+    ),
+
+    INDEX idx_ai_messages_intent (
+        detected_intent
+    )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ai_message_feedback (
+    feedback_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    message_id BIGINT UNSIGNED NOT NULL,
+    customer_id BIGINT UNSIGNED NULL,
+    feedback_type VARCHAR(30) NOT NULL,
+    feedback_note VARCHAR(500) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_ai_message_feedback_message
+        FOREIGN KEY (message_id) REFERENCES ai_messages(message_id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    CONSTRAINT fk_ai_message_feedback_customer
+        FOREIGN KEY (customer_id) REFERENCES users(user_id)
+        ON UPDATE CASCADE ON DELETE SET NULL,
+
+    UNIQUE KEY uq_ai_feedback_customer_message (
+        message_id,
+        customer_id
+    )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- =========================================================
 -- 10. AUDIT LOG

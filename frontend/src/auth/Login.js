@@ -1,10 +1,16 @@
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+
 import { useAuth } from "../context/AuthContext";
 import { toast } from "../utils/Toast";
 
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const emailRegex =
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function Login() {
   const navigate = useNavigate();
@@ -16,31 +22,61 @@ function Login() {
     password: "",
     rememberMe: true,
   });
-  const [errors, setErrors] = useState({});
-  const [serverError, setServerError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+
+  const [errors, setErrors] =
+    useState({});
+
+  const [
+    serverError,
+    setServerError,
+  ] = useState("");
+
+  const [
+    showPassword,
+    setShowPassword,
+  ] = useState(false);
+
+  const [
+    submitting,
+    setSubmitting,
+  ] = useState(false);
 
   function updateField(name, value) {
-    setForm((previous) => ({ ...previous, [name]: value }));
-    setErrors((previous) => ({ ...previous, [name]: "" }));
+    setForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+
+    setErrors((previous) => ({
+      ...previous,
+      [name]: "",
+    }));
+
     setServerError("");
   }
 
   function validate() {
     const nextErrors = {};
-    const email = form.email.trim();
+    const email = form.email
+      .trim()
+      .toLowerCase();
 
     if (!email) {
-      nextErrors.email = "Email không được để trống";
+      nextErrors.email =
+        "Email không được để trống";
     } else if (!emailRegex.test(email)) {
-      nextErrors.email = "Email không đúng định dạng";
+      nextErrors.email =
+        "Email không đúng định dạng";
     }
 
     if (!form.password) {
-      nextErrors.password = "Mật khẩu không được để trống";
-    } else if (form.password.length < 6) {
-      nextErrors.password = "Mật khẩu phải có ít nhất 6 ký tự";
+      nextErrors.password =
+        "Mật khẩu không được để trống";
+    } else if (
+      form.password.length < 6
+    ) {
+      nextErrors.password =
+        "Mật khẩu phải có ít nhất 6 ký tự";
     }
 
     return nextErrors;
@@ -52,8 +88,14 @@ function Login() {
     const nextErrors = validate();
     setErrors(nextErrors);
 
-    if (Object.keys(nextErrors).length) {
-      toast.warning("Vui lòng kiểm tra lại thông tin", 2500);
+    if (
+      Object.keys(nextErrors).length
+    ) {
+      toast.warning(
+        "Vui lòng kiểm tra lại thông tin",
+        2500,
+      );
+
       return;
     }
 
@@ -61,19 +103,58 @@ function Login() {
     setServerError("");
 
     try {
-      await login({
-        email: form.email.trim().toLowerCase(),
+      const result = await login({
+        email: form.email
+          .trim()
+          .toLowerCase(),
+
         password: form.password,
-        rememberMe: form.rememberMe,
+
+        rememberMe:
+          form.rememberMe,
       });
 
-      toast.success("Đăng nhập thành công", 2000);
+      toast.success(
+        "Đăng nhập thành công",
+        1800,
+      );
 
-      const redirectTo = location.state?.from || "/";
-      navigate(redirectTo, { replace: true });
+      const role = String(
+        result?.user?.role || "",
+      ).toUpperCase();
+
+      if (
+        role === "STAFF" ||
+        role === "ADMIN"
+      ) {
+        navigate("/staff", {
+          replace: true,
+        });
+
+        return;
+      }
+
+      const requestedRoute =
+        location.state?.from;
+
+      if (requestedRoute) {
+        navigate(requestedRoute, {
+          replace: true,
+        });
+
+        return;
+      }
+
+      navigate("/", {
+        replace: true,
+      });
     } catch (error) {
       setServerError(error.message);
-      toast.error(error.message, 3000);
+
+      toast.error(
+        error.message,
+        3000,
+      );
     } finally {
       setSubmitting(false);
     }
@@ -83,102 +164,221 @@ function Login() {
     <main className="auth-page auth-page--login">
       <section className="auth-shell">
         <aside className="auth-visual-panel">
-          <span className="auth-kicker">ElectroShop Secure Access</span>
-          <h1>Đăng nhập để tiếp tục hành trình mua sắm công nghệ</h1>
+          <span className="auth-kicker">
+            Gearxin Secure Access
+          </span>
+
+          <h1>
+            Đăng nhập để tiếp tục mua
+            sắm và quản lý hệ thống
+          </h1>
+
           <p>
-            Phiên đăng nhập được lưu bằng cookie HTTP-only. JavaScript phía
-            trình duyệt không đọc trực tiếp được cookie xác thực.
+            Khách hàng cần đăng nhập
+            trước khi thêm giỏ hàng
+            hoặc mua ngay. Nhân viên
+            và quản trị viên sẽ được
+            chuyển tới khu vực nghiệp
+            vụ riêng.
           </p>
 
           <div className="auth-security-list">
             <span>
-              <FontAwesomeIcon icon={["fas", "shield-alt"]} />
-              Xác thực cả frontend và backend
+              <FontAwesomeIcon
+                icon={[
+                  "fas",
+                  "shield-alt",
+                ]}
+              />
+              Cookie HTTP-only
             </span>
+
             <span>
-              <FontAwesomeIcon icon={["fas", "cookie-bite"]} />
-              Cookie HTTP-only, SameSite=Lax
+              <FontAwesomeIcon
+                icon={[
+                  "fas",
+                  "user-lock",
+                ]}
+              />
+              Phân quyền CUSTOMER,
+              STAFF và ADMIN
             </span>
+
             <span>
-              <FontAwesomeIcon icon={["fas", "lock"]} />
-              Mật khẩu được kiểm tra bằng bcrypt
+              <FontAwesomeIcon
+                icon={[
+                  "fas",
+                  "lock",
+                ]}
+              />
+              Mật khẩu mã hóa bcrypt
             </span>
           </div>
         </aside>
 
         <div className="auth-form-panel">
           <div className="auth-form-heading">
-            <span>Chào mừng quay lại</span>
+            <span>
+              Chào mừng quay lại
+            </span>
+
             <h2>Đăng nhập</h2>
-            <p>Dùng tài khoản ElectroShop của bạn.</p>
+
+            <p>
+              Dùng tài khoản Gearxin
+              của bạn.
+            </p>
           </div>
 
           {serverError && (
-            <div className="auth-server-error" role="alert">
+            <div
+              className="auth-server-error"
+              role="alert"
+            >
               {serverError}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} noValidate>
+          <form
+            onSubmit={handleSubmit}
+            noValidate
+          >
             <label className="auth-field">
               <span>Email</span>
-              <div className={`auth-input-wrap ${errors.email ? "is-invalid" : ""}`}>
-                <FontAwesomeIcon icon={["fas", "envelope"]} />
+
+              <div
+                className={`auth-input-wrap ${
+                  errors.email
+                    ? "is-invalid"
+                    : ""
+                }`}
+              >
+                <FontAwesomeIcon
+                  icon={[
+                    "fas",
+                    "envelope",
+                  ]}
+                />
+
                 <input
                   type="email"
                   autoComplete="email"
                   value={form.email}
                   onChange={(event) =>
-                    updateField("email", event.target.value)
+                    updateField(
+                      "email",
+                      event.target.value,
+                    )
                   }
                   placeholder="you@example.com"
-                  aria-invalid={Boolean(errors.email)}
+                  aria-invalid={Boolean(
+                    errors.email,
+                  )}
                 />
               </div>
-              {errors.email && <small>{errors.email}</small>}
+
+              {errors.email && (
+                <small>
+                  {errors.email}
+                </small>
+              )}
             </label>
 
             <label className="auth-field">
               <span>Mật khẩu</span>
-              <div className={`auth-input-wrap ${errors.password ? "is-invalid" : ""}`}>
-                <FontAwesomeIcon icon={["fas", "lock"]} />
+
+              <div
+                className={`auth-input-wrap ${
+                  errors.password
+                    ? "is-invalid"
+                    : ""
+                }`}
+              >
+                <FontAwesomeIcon
+                  icon={[
+                    "fas",
+                    "lock",
+                  ]}
+                />
+
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type={
+                    showPassword
+                      ? "text"
+                      : "password"
+                  }
                   autoComplete="current-password"
                   value={form.password}
                   onChange={(event) =>
-                    updateField("password", event.target.value)
+                    updateField(
+                      "password",
+                      event.target.value,
+                    )
                   }
                   placeholder="Nhập mật khẩu"
-                  aria-invalid={Boolean(errors.password)}
+                  aria-invalid={Boolean(
+                    errors.password,
+                  )}
                 />
+
                 <button
                   type="button"
                   className="auth-password-toggle"
-                  onClick={() => setShowPassword((value) => !value)}
-                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  onClick={() =>
+                    setShowPassword(
+                      (value) =>
+                        !value,
+                    )
+                  }
+                  aria-label={
+                    showPassword
+                      ? "Ẩn mật khẩu"
+                      : "Hiện mật khẩu"
+                  }
                 >
                   <FontAwesomeIcon
-                    icon={["fas", showPassword ? "eye-slash" : "eye"]}
+                    icon={[
+                      "fas",
+                      showPassword
+                        ? "eye-slash"
+                        : "eye",
+                    ]}
                   />
                 </button>
               </div>
-              {errors.password && <small>{errors.password}</small>}
+
+              {errors.password && (
+                <small>
+                  {errors.password}
+                </small>
+              )}
             </label>
 
             <div className="auth-form-options">
               <label className="auth-checkbox">
                 <input
                   type="checkbox"
-                  checked={form.rememberMe}
+                  checked={
+                    form.rememberMe
+                  }
                   onChange={(event) =>
-                    updateField("rememberMe", event.target.checked)
+                    updateField(
+                      "rememberMe",
+                      event.target
+                        .checked,
+                    )
                   }
                 />
-                <span>Ghi nhớ đăng nhập trong 30 ngày</span>
+
+                <span>
+                  Ghi nhớ đăng nhập
+                  trong 30 ngày
+                </span>
               </label>
 
-              <Link to="/forgot-password">Quên mật khẩu?</Link>
+              <Link to="/forgot-password">
+                Quên mật khẩu?
+              </Link>
             </div>
 
             <button
@@ -186,12 +386,17 @@ function Login() {
               className="auth-submit-btn"
               disabled={submitting}
             >
-              {submitting ? "Đang xác thực..." : "Đăng nhập"}
+              {submitting
+                ? "Đang xác thực..."
+                : "Đăng nhập"}
             </button>
           </form>
 
           <p className="auth-switch">
-            Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link>
+            Chưa có tài khoản?{" "}
+            <Link to="/register">
+              Đăng ký ngay
+            </Link>
           </p>
         </div>
       </section>

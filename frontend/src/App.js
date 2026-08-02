@@ -1,22 +1,25 @@
 import { useEffect, useState } from "react";
 import {
-  Routes,
   Route,
+  Routes,
   useParams,
 } from "react-router-dom";
 
-import Template from "./template/Template";
-import ProductDetail from "./products/detail/ProductDetail";
-import Landing from "./landing/Landing";
-import ProductList from "./products/ProductList";
 import About from "./about/About";
-import Contact from "./contact/Contact";
+import AiSearchResult from "./ai/AiSearchResult";
+import ForgotPassword from "./auth/ForgotPassword";
 import Login from "./auth/Login";
 import Register from "./auth/Register";
-import ForgotPassword from "./auth/ForgotPassword";
+import RequireAuth from "./auth/RequireAuth";
+import { RequireRole } from "./auth/RequireRole";
 import Cart from "./cart/Cart";
+import Contact from "./contact/Contact";
+import Landing from "./landing/Landing";
 import Payment from "./payment/Payment";
-import AiSearchResult from "./ai/AiSearchResult";
+import ProductList from "./products/ProductList";
+import ProductDetail from "./products/detail/ProductDetail";
+import StaffDashboard from "./staff/StaffDashboard";
+import Template from "./template/Template";
 
 const categorySlugMap = {
   laptop: "laptop",
@@ -35,15 +38,15 @@ function CategoryProductPage({
   const { categorySlug } = useParams();
 
   useEffect(() => {
-    setCategory(
-      categorySlugMap[categorySlug] || ""
-    );
+    const resolvedCategory =
+      categorySlugMap[categorySlug] || "";
 
+    setCategory(resolvedCategory);
     setBrand("");
   }, [
     categorySlug,
-    setBrand,
     setCategory,
+    setBrand,
   ]);
 
   return (
@@ -56,7 +59,19 @@ function CategoryProductPage({
   );
 }
 
-function App() {
+function NotFoundPage() {
+  return (
+    <div className="container py-5 text-center">
+      <h1 className="text-danger">
+        404 - Không tìm thấy trang
+      </h1>
+
+      <p>Vui lòng quay lại trang chủ.</p>
+    </div>
+  );
+}
+
+function StorefrontRoutes() {
   const [
     currentCategory,
     setCurrentCategory,
@@ -139,30 +154,50 @@ function App() {
 
         <Route
           path="/cart"
-          element={<Cart />}
+          element={
+            <RequireAuth>
+              <Cart />
+            </RequireAuth>
+          }
         />
 
         <Route
           path="/payment"
-          element={<Payment />}
+          element={
+            <RequireAuth>
+              <Payment />
+            </RequireAuth>
+          }
         />
 
         <Route
           path="*"
-          element={
-            <div className="container mt-5 text-center">
-              <h1 className="text-danger">
-                404 - Không tìm thấy trang
-              </h1>
-
-              <p>
-                Vui lòng quay lại trang chủ.
-              </p>
-            </div>
-          }
+          element={<NotFoundPage />}
         />
       </Routes>
     </Template>
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route
+        path="/staff/*"
+        element={
+          <RequireRole
+            roles={["STAFF", "ADMIN"]}
+          >
+            <StaffDashboard />
+          </RequireRole>
+        }
+      />
+
+      <Route
+        path="/*"
+        element={<StorefrontRoutes />}
+      />
+    </Routes>
   );
 }
 

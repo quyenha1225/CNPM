@@ -1,3 +1,13 @@
+-- ============================================================
+-- CNPM / ELECTROSHOP DATABASE
+-- FILE 03: AI SEARCH / AI CHAT SETUP
+--
+-- Chạy sau 01_create_tables.sql và 02_insert_data.sql.
+-- File này không DROP database/table và có thể chạy lại.
+-- Nó chuẩn hóa thuộc tính AI, tag, index, log tìm kiếm,
+-- hội thoại AI và dữ liệu AI cho sản phẩm.
+-- ============================================================
+
 -- =========================================================
 -- CNPM_DB - SAFE AI SEARCH MIGRATION
 -- KHÔNG DROP DATABASE
