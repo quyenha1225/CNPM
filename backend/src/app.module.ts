@@ -13,6 +13,10 @@ import { ProductsModule } from './products/products.module';
 import { StaffModule } from './staff/staff.module';
 import { UsersModule } from './users/users.module';
 
+// Import 2 module mới tạo
+import { PaymentModule } from './payment/payment.module';
+import { OrdersModule } from './orders/orders.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -28,9 +32,7 @@ import { UsersModule } from './users/users.module';
       password: process.env.DB_PASSWORD || '',
       database: process.env.DB_DATABASE || 'electroshop_db',
 
-      entities: [
-        `${__dirname}/**/*.entity{.ts,.js}`,
-      ],
+      entities: [`${__dirname}/**/*.entity{.ts,.js}`],
 
       /*
        * Database được quản lý bằng SQL thủ công.
@@ -51,6 +53,10 @@ import { UsersModule } from './users/users.module';
     CategoriesModule,
     AiModule,
 
+    // Đăng ký 2 module mới vào hệ thống
+    PaymentModule,
+    OrdersModule,
+
     /*
      * STAFF và ADMIN là hai module độc lập.
      */
@@ -58,12 +64,8 @@ import { UsersModule } from './users/users.module';
     AdminModule,
   ],
 
-  controllers: [
-    AppController,
-  ],
+  controllers: [AppController],
 
-  providers: [
-    AppService,
-  ],
+  providers: [AppService],
 })
 export class AppModule {}
