@@ -101,7 +101,7 @@ export class PaymentService {
     }
   }
 
-  // 2. Webhook nhận tiền từ SePay (Đã loại bỏ hoàn toàn các dòng log rườm rà)
+  // 2. Webhook nhận tiền từ SePay (Tự động xác nhận thanh toán & Trừ kho chính xác)
   async handleSepayWebhook(payload: any) {
     const amountIn = payload.transferAmount;
     const rawContent = `${payload.transferContent || ''} ${payload.description || ''}`;
@@ -128,15 +128,19 @@ export class PaymentService {
     const { order_id, payment_id, payment_amount } = orders[0];
 
     if (Number(amountIn) >= Number(payment_amount)) {
-      const [[paidStatus], [confirmedStatus]] = await Promise.all([
+      const [[paidStatus], [confirmedStatus], [outType]] = await Promise.all([
         this.dataSource.query(
           `SELECT payment_status_id FROM payment_statuses WHERE payment_status_code = 'PAID' LIMIT 1`,
         ),
         this.dataSource.query(
           `SELECT order_status_id FROM order_statuses WHERE order_status_code = 'CONFIRMED' LIMIT 1`,
         ),
+        this.dataSource.query(
+          `SELECT inventory_type_id FROM inventory_transaction_types WHERE inventory_type_code = 'OUT' LIMIT 1`,
+        ),
       ]);
 
+      // 1. Cập nhật trạng thái thanh toán và đơn hàng thành công
       await this.dataSource.query(
         `UPDATE payments SET payment_status_id = ?, transaction_code = ?, paid_at = NOW() WHERE payment_id = ?`,
         [
@@ -150,6 +154,34 @@ export class PaymentService {
         `UPDATE orders SET order_status_id = ?, order_updated_at = NOW() WHERE order_id = ?`,
         [confirmedStatus.order_status_id, order_id],
       );
+
+      // 2. Lấy sản phẩm trong đơn để trừ tồn kho
+      const orderItems = await this.dataSource.query(
+        `SELECT product_id, ordered_quantity FROM order_items WHERE order_id = ?`,
+        [order_id],
+      );
+
+      // 3. Ghi nhận giao dịch xuất kho (OUT) với số lượng dương để hệ thống tự động trừ tồn kho chuẩn xác
+      for (const item of orderItems) {
+        const variants = await this.dataSource.query(
+          `SELECT variant_id FROM product_variants WHERE product_id = ? LIMIT 1`,
+          [item.product_id],
+        );
+        const variantId =
+          variants.length > 0 ? variants[0].variant_id : item.product_id;
+
+        await this.dataSource.query(
+          `INSERT INTO inventory_transactions (product_id, variant_id, inventory_type_id, transaction_quantity, unit_cost, transaction_note, transaction_at)
+           VALUES (?, ?, ?, ?, 0, ?, NOW())`,
+          [
+            item.product_id,
+            variantId,
+            outType.inventory_type_id,
+            item.ordered_quantity,
+            `Xuất kho tự động cho đơn hàng ${orderCode}`,
+          ],
+        );
+      }
     }
 
     return { success: true };
