@@ -1,4 +1,3 @@
-
 import {
   BadRequestException,
   Injectable,
@@ -9,8 +8,15 @@ import { ConfigService } from '@nestjs/config';
 import { DataSource, QueryRunner } from 'typeorm';
 import { AiSearchDto } from './dto/ai-search.dto';
 import { GoogleGenAI } from '@google/genai';
+export type SearchIntent =
+  | 'product_search'
+  | 'non_product'
+  | 'unclear';
+
 export interface ParsedRequirements {
-  intent: string;
+  intent: SearchIntent;
+  confidence: number;
+  rejectReason: string | null;
   productType: string | null;
   categorySlug: string | null;
   brand: string | null;
@@ -18,7 +24,10 @@ export interface ParsedRequirements {
   maxPrice: number | null;
   purposes: string[];
   targetUsers: string[];
-  requiredAttributes: Record<string, string | number | boolean>;
+  requiredAttributes: Record<
+    string,
+    string | number | boolean
+  >;
   recommendedTabCount: number | null;
   keywords: string[];
 }
@@ -151,6 +160,14 @@ export class AiService {
 
   parsedRequirements = this.parseQueryLocally(query);
 }
+
+    /*
+     * Chỉ truy vấn MySQL khi câu nhập thực sự là
+     * yêu cầu tìm kiếm hoặc tư vấn sản phẩm.
+     */
+    this.assertValidProductSearch(
+      parsedRequirements,
+    );
 
     const customerId = await this.resolveCustomerId(
       dto.customerId,
@@ -478,41 +495,59 @@ export class AiService {
     };
   }
 
- private async parseQueryWithExternalAi(
-  query: string,
-): Promise<{
-  requirements: ParsedRequirements;
-  provider: string;
-  model: string;
-} | null> {
-  const apiKey =
-    this.configService.get<string>('GEMINI_API_KEY');
+  private async parseQueryWithExternalAi(
+    query: string,
+  ): Promise<{
+    requirements: ParsedRequirements;
+    provider: string;
+    model: string;
+  } | null> {
+    const apiKey =
+      this.configService.get<string>(
+        'GEMINI_API_KEY',
+      );
 
-  if (!apiKey) {
-    console.warn(
-      'GEMINI_API_KEY chưa được cấu hình, dùng LOCAL_FALLBACK.',
-    );
+    if (!apiKey) {
+      console.warn(
+        'GEMINI_API_KEY chưa được cấu hình, dùng LOCAL_FALLBACK.',
+      );
 
-    return null;
-  }
+      return null;
+    }
 
-  const model =
-    this.configService.get<string>('GEMINI_MODEL') ||
-  'gemini-3-flash-preview';
-  const ai = new GoogleGenAI({
-    apiKey,
-  });
+    const model =
+      this.configService.get<string>(
+        'GEMINI_MODEL',
+      ) || 'gemini-3-flash-preview';
 
-  const prompt = `
-Bạn là bộ phân tích yêu cầu tìm kiếm cho cửa hàng điện tử.
+    const ai = new GoogleGenAI({
+      apiKey,
+    });
 
-Hãy phân tích câu người dùng và chỉ trả về một JSON object hợp lệ.
+    const prompt = `
+Bạn là bộ phân loại và phân tích nhu cầu tìm kiếm
+cho cửa hàng thiết bị công nghệ ElectroShop.
+
+Nhiệm vụ đầu tiên:
+Xác định câu người dùng có liên quan đến việc tìm kiếm,
+tư vấn, so sánh hoặc mua sản phẩm công nghệ hay không.
+
+Website chỉ kinh doanh các nhóm:
+- Laptop
+- Điện thoại
+- Màn hình
+- Phụ kiện
+- Linh kiện PC như RAM, SSD, CPU, GPU
+
+Chỉ trả về một JSON object hợp lệ.
 Không dùng markdown.
-Không giải thích thêm.
+Không giải thích bên ngoài JSON.
 
 Cấu trúc bắt buộc:
 {
-  "intent": "product_search",
+  "intent": "product_search | non_product | unclear",
+  "confidence": 0.0,
+  "rejectReason": string | null,
   "productType": string | null,
   "categorySlug": string | null,
   "brand": string | null,
@@ -525,66 +560,153 @@ Cấu trúc bắt buộc:
   "keywords": string[]
 }
 
-Quy tắc:
+Quy tắc phân loại:
+
+1. Dùng intent = "product_search" khi người dùng:
+- Tìm một sản phẩm công nghệ.
+- Cần tư vấn sản phẩm.
+- Muốn mua hoặc so sánh sản phẩm.
+- Đưa ra ngân sách, cấu hình hoặc mục đích sử dụng.
+
+2. Dùng intent = "non_product" khi câu hỏi thuộc:
+- Địa lý.
+- Lịch sử.
+- Thời tiết.
+- Chính trị.
+- Y tế.
+- Nấu ăn.
+- Kiến thức chung.
+- Chủ đề không liên quan đến sản phẩm công nghệ.
+
+3. Dùng intent = "unclear" khi:
+- Người dùng có vẻ muốn mua sản phẩm nhưng không nói rõ.
+- Không xác định được sản phẩm, nhu cầu hoặc tiêu chí.
+
+Ví dụ 1:
+Câu: "Tỉnh thành nào ở Hà Nội?"
+Kết quả:
+{
+  "intent": "non_product",
+  "confidence": 0.99,
+  "rejectReason": "Câu hỏi địa lý không liên quan đến tìm kiếm sản phẩm.",
+  "productType": null,
+  "categorySlug": null,
+  "brand": null,
+  "minPrice": null,
+  "maxPrice": null,
+  "purposes": [],
+  "targetUsers": [],
+  "requiredAttributes": {},
+  "recommendedTabCount": null,
+  "keywords": []
+}
+
+Ví dụ 2:
+Câu: "Tôi cần một cái tốt"
+Kết quả:
+{
+  "intent": "unclear",
+  "confidence": 0.8,
+  "rejectReason": "Chưa xác định được loại sản phẩm cần tìm.",
+  "productType": null,
+  "categorySlug": null,
+  "brand": null,
+  "minPrice": null,
+  "maxPrice": null,
+  "purposes": [],
+  "targetUsers": [],
+  "requiredAttributes": {},
+  "recommendedTabCount": null,
+  "keywords": []
+}
+
+Ví dụ 3:
+Câu: "Laptop cho sinh viên lập trình dưới 20 triệu"
+Kết quả:
+{
+  "intent": "product_search",
+  "confidence": 0.98,
+  "rejectReason": null,
+  "productType": "laptop",
+  "categorySlug": "laptop",
+  "brand": null,
+  "minPrice": null,
+  "maxPrice": 20000000,
+  "purposes": ["học tập", "lập trình"],
+  "targetUsers": ["sinh viên"],
+  "requiredAttributes": {},
+  "recommendedTabCount": null,
+  "keywords": ["laptop", "sinh viên", "lập trình"]
+}
+
+Quy tắc dữ liệu:
 - Giá phải chuyển thành số VND.
 - "2 triệu" = 2000000.
 - "500 nghìn" = 500000.
-- productType dùng tên ngắn như:
-  laptop, điện thoại, ram, ssd, cpu, gpu, màn hình, phụ kiện.
-- categorySlug chỉ được dùng:
+- confidence phải nằm trong khoảng 0 đến 1.
+- productType có thể là:
+  laptop, điện thoại, ram, ssd, cpu, gpu,
+  màn hình, chuột, bàn phím, tai nghe, phụ kiện.
+- categorySlug chỉ được là:
   laptop,
   dien-thoai,
   linh-kien-pc,
   man-hinh,
   phu-kien.
-- Không tự bịa yêu cầu người dùng không nói.
+- Không tự tạo sản phẩm.
+- Không tự tạo giá.
+- Không tự thêm yêu cầu người dùng không nói.
+- Với non_product hoặc unclear, các trường sản phẩm
+  không xác định phải để null hoặc mảng rỗng.
 
-Câu tìm kiếm:
-${query}
-  `.trim();
+Câu người dùng:
+${JSON.stringify(query)}
+    `.trim();
 
-  try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        temperature: 0,
-        responseMimeType: 'application/json',
-      },
-    });
+    try {
+      const response =
+        await ai.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            temperature: 0,
+            responseMimeType:
+              'application/json',
+          },
+        });
 
-    const outputText = response.text?.trim();
+      const outputText =
+        response.text?.trim();
 
-    if (!outputText) {
-      throw new Error(
-        'Gemini không trả về nội dung.',
+      if (!outputText) {
+        throw new Error(
+          'Gemini không trả về nội dung.',
+        );
+      }
+
+      const jsonText =
+        this.extractJsonObject(outputText);
+
+      const parsed = JSON.parse(jsonText);
+
+      return {
+        requirements:
+          this.normalizeParsedRequirements(
+            parsed,
+            query,
+          ),
+        provider: 'GEMINI',
+        model,
+      };
+    } catch (error) {
+      console.error(
+        'Gemini API parse failed:',
+        error,
       );
+
+      throw error;
     }
-
-    const jsonText =
-      this.extractJsonObject(outputText);
-
-    const parsed = JSON.parse(jsonText);
-
-    return {
-      requirements:
-        this.normalizeParsedRequirements(
-          parsed,
-          query,
-        ),
-      provider: 'GEMINI',
-      model,
-    };
-  } catch (error) {
-    console.error(
-      'Gemini API parse failed:',
-      error,
-    );
-
-    throw error;
   }
-}
-  
 
   private extractOpenAiOutputText(
     responseData: any,
@@ -650,47 +772,105 @@ ${query}
     parsed: any,
     originalQuery: string,
   ): ParsedRequirements {
+    const allowedIntents:
+      SearchIntent[] = [
+        'product_search',
+        'non_product',
+        'unclear',
+      ];
+
+    const rawIntent =
+      typeof parsed?.intent === 'string'
+        ? parsed.intent
+            .trim()
+            .toLowerCase()
+        : 'unclear';
+
+    const intent: SearchIntent =
+      allowedIntents.includes(
+        rawIntent as SearchIntent,
+      )
+        ? (rawIntent as SearchIntent)
+        : 'unclear';
+
+    const rawConfidence =
+      Number(parsed?.confidence);
+
+    const defaultConfidence =
+      intent === 'product_search'
+        ? 0.7
+        : intent === 'non_product'
+          ? 0.9
+          : 0.5;
+
+    const confidence =
+      Number.isFinite(rawConfidence)
+        ? Math.min(
+            Math.max(
+              rawConfidence,
+              0,
+            ),
+            1,
+          )
+        : defaultConfidence;
+
     const normalizedKeywords =
-      this.normalizeStringArray(parsed?.keywords);
+      this.normalizeStringArray(
+        parsed?.keywords,
+      );
 
     return {
-      intent:
-        typeof parsed?.intent === 'string'
-          ? parsed.intent
-          : 'product_search',
+      intent,
 
-      productType: this.normalizeOptionalString(
-        parsed?.productType,
-      ),
+      confidence,
 
-      categorySlug: this.normalizeOptionalString(
-        parsed?.categorySlug,
-      ),
+      rejectReason:
+        this.normalizeOptionalString(
+          parsed?.rejectReason,
+        ),
 
-      brand: this.normalizeOptionalString(
-        parsed?.brand,
-      ),
+      productType:
+        this.normalizeOptionalString(
+          parsed?.productType,
+        ),
 
-      minPrice: this.normalizeNullableNumber(
-        parsed?.minPrice,
-      ),
+      categorySlug:
+        this.normalizeOptionalString(
+          parsed?.categorySlug,
+        ),
 
-      maxPrice: this.normalizeNullableNumber(
-        parsed?.maxPrice,
-      ),
+      brand:
+        this.normalizeOptionalString(
+          parsed?.brand,
+        ),
 
-      purposes: this.normalizeStringArray(
-        parsed?.purposes,
-      ),
+      minPrice:
+        this.normalizeNullableNumber(
+          parsed?.minPrice,
+        ),
 
-      targetUsers: this.normalizeStringArray(
-        parsed?.targetUsers,
-      ),
+      maxPrice:
+        this.normalizeNullableNumber(
+          parsed?.maxPrice,
+        ),
+
+      purposes:
+        this.normalizeStringArray(
+          parsed?.purposes,
+        ),
+
+      targetUsers:
+        this.normalizeStringArray(
+          parsed?.targetUsers,
+        ),
 
       requiredAttributes:
         parsed?.requiredAttributes &&
-        typeof parsed.requiredAttributes === 'object' &&
-        !Array.isArray(parsed.requiredAttributes)
+        typeof parsed.requiredAttributes ===
+          'object' &&
+        !Array.isArray(
+          parsed.requiredAttributes,
+        )
           ? parsed.requiredAttributes
           : {},
 
@@ -700,16 +880,21 @@ ${query}
         ),
 
       keywords:
-        normalizedKeywords.length > 0
-          ? normalizedKeywords
-          : this.extractKeywords(originalQuery),
+        intent === 'product_search'
+          ? normalizedKeywords.length > 0
+            ? normalizedKeywords
+            : this.extractKeywords(
+                originalQuery,
+              )
+          : [],
     };
   }
 
   private parseQueryLocally(
     query: string,
   ): ParsedRequirements {
-    const normalizedQuery = this.normalizeText(query);
+    const normalizedQuery =
+      this.normalizeText(query);
 
     const productTypeMap: Array<{
       type: string;
@@ -763,7 +948,10 @@ ${query}
       {
         type: 'màn hình',
         categorySlug: 'man-hinh',
-        patterns: ['man hinh', 'monitor'],
+        patterns: [
+          'man hinh',
+          'monitor',
+        ],
       },
       {
         type: 'phụ kiện',
@@ -773,21 +961,32 @@ ${query}
           'chuot',
           'ban phim',
           'tai nghe',
+          'webcam',
+          'loa',
+          'cap sac',
+          'sac',
         ],
       },
     ];
 
-    let productType: string | null = null;
-    let categorySlug: string | null = null;
+    let productType:
+      string | null = null;
+
+    let categorySlug:
+      string | null = null;
 
     for (const item of productTypeMap) {
-      const matched = item.patterns.some((pattern) =>
-        normalizedQuery.includes(pattern),
-      );
+      const matched =
+        item.patterns.some((pattern) =>
+          normalizedQuery.includes(
+            pattern,
+          ),
+        );
 
       if (matched) {
         productType = item.type;
-        categorySlug = item.categorySlug;
+        categorySlug =
+          item.categorySlug;
         break;
       }
     }
@@ -844,10 +1043,15 @@ ${query}
     for (const [
       purpose,
       patterns,
-    ] of Object.entries(purposePatterns)) {
-      const matched = patterns.some((pattern) =>
-        normalizedQuery.includes(pattern),
-      );
+    ] of Object.entries(
+      purposePatterns,
+    )) {
+      const matched =
+        patterns.some((pattern) =>
+          normalizedQuery.includes(
+            pattern,
+          ),
+        );
 
       if (matched) {
         purposes.push(purpose);
@@ -879,18 +1083,27 @@ ${query}
     for (const [
       targetUser,
       patterns,
-    ] of Object.entries(targetUserPatterns)) {
-      const matched = patterns.some((pattern) =>
-        normalizedQuery.includes(pattern),
-      );
+    ] of Object.entries(
+      targetUserPatterns,
+    )) {
+      const matched =
+        patterns.some((pattern) =>
+          normalizedQuery.includes(
+            pattern,
+          ),
+        );
 
       if (matched) {
-        targetUsers.push(targetUser);
+        targetUsers.push(
+          targetUser,
+        );
       }
     }
 
     const priceRange =
-      this.extractPriceRange(normalizedQuery);
+      this.extractPriceRange(
+        normalizedQuery,
+      );
 
     const recommendedTabCount =
       this.extractRecommendedTabCount(
@@ -921,8 +1134,61 @@ ${query}
         normalizedQuery.includes(item),
       ) ?? null;
 
+    const shoppingPatterns = [
+      'mua',
+      'tu van',
+      'goi y',
+      'nen chon',
+      'so sanh',
+      'tim san pham',
+      'gia bao nhieu',
+      'con hang',
+      'ngan sach',
+      'bao nhieu tien',
+    ];
+
+    const hasShoppingIntent =
+      shoppingPatterns.some((pattern) =>
+        normalizedQuery.includes(
+          pattern,
+        ),
+      ) ||
+      priceRange.minPrice !== null ||
+      priceRange.maxPrice !== null ||
+      purposes.length > 0 ||
+      targetUsers.length > 0;
+
+    const hasProductSignal = Boolean(
+      productType ||
+      categorySlug ||
+      brand ||
+      recommendedTabCount !== null,
+    );
+
+    let intent: SearchIntent;
+    let confidence: number;
+    let rejectReason: string | null;
+
+    if (hasProductSignal) {
+      intent = 'product_search';
+      confidence = 0.85;
+      rejectReason = null;
+    } else if (hasShoppingIntent) {
+      intent = 'unclear';
+      confidence = 0.7;
+      rejectReason =
+        'Chưa xác định được loại sản phẩm cần tìm.';
+    } else {
+      intent = 'non_product';
+      confidence = 0.95;
+      rejectReason =
+        'Nội dung không liên quan đến tìm kiếm sản phẩm công nghệ.';
+    }
+
     return {
-      intent: 'product_search',
+      intent,
+      confidence,
+      rejectReason,
       productType,
       categorySlug,
       brand,
@@ -932,8 +1198,62 @@ ${query}
       targetUsers,
       requiredAttributes: {},
       recommendedTabCount,
-      keywords: this.extractKeywords(query),
+      keywords:
+        intent === 'product_search'
+          ? this.extractKeywords(query)
+          : [],
     };
+  }
+
+  private assertValidProductSearch(
+    requirements: ParsedRequirements,
+  ): void {
+    if (
+      requirements.intent ===
+      'non_product'
+    ) {
+      throw new BadRequestException(
+        requirements.rejectReason ||
+          'Nội dung không liên quan đến tìm kiếm sản phẩm công nghệ.',
+      );
+    }
+
+    if (
+      requirements.intent ===
+      'unclear'
+    ) {
+      throw new BadRequestException(
+        requirements.rejectReason ||
+          'Yêu cầu chưa đủ rõ ràng. Hãy nhập loại sản phẩm, mục đích sử dụng hoặc ngân sách.',
+      );
+    }
+
+    if (requirements.confidence < 0.55) {
+      throw new BadRequestException(
+        'Hệ thống chưa xác định rõ nhu cầu sản phẩm. Ví dụ: Laptop học lập trình dưới 20 triệu.',
+      );
+    }
+
+    const hasRequirement = Boolean(
+      requirements.productType ||
+      requirements.categorySlug ||
+      requirements.brand ||
+      requirements.minPrice !== null ||
+      requirements.maxPrice !== null ||
+      requirements.purposes.length > 0 ||
+      requirements.targetUsers.length > 0 ||
+      requirements.recommendedTabCount !==
+        null ||
+      Object.keys(
+        requirements.requiredAttributes,
+      ).length > 0,
+    );
+
+    if (!hasRequirement) {
+      throw new BadRequestException(
+        'Không tìm thấy tiêu chí sản phẩm trong nội dung. Hãy mô tả rõ sản phẩm cần tìm.',
+      );
+    }
   }
 
   private extractPriceRange(
@@ -1054,6 +1374,15 @@ ${query}
     requirements: ParsedRequirements,
     ignoreBudget: boolean,
   ): Promise<CandidateProduct[]> {
+    if (
+      requirements.intent !==
+      'product_search'
+    ) {
+      throw new BadRequestException(
+        'Không được truy vấn sản phẩm cho nội dung không liên quan.',
+      );
+    }
+
     const whereConditions: string[] = [
       `p.product_status = 'ACTIVE'`,
     ];
