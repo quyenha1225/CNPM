@@ -1,0 +1,1052 @@
+/* =====================================================
+   FIX ACCOUNT LAYOUT
+===================================================== */
+
+.gx-account-page {
+  width: 100%;
+  min-height: 70vh;
+  padding: 36px 0 64px;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(14, 165, 233, 0.1),
+      transparent 34%
+    ),
+    #f5f8fc;
+}
+
+.gx-account-shell {
+  display: grid !important;
+  grid-template-columns:
+    270px minmax(0, 1fr) !important;
+  gap: 26px !important;
+  align-items: start !important;
+  width: 100%;
+}
+
+.gx-account-sidebar {
+  position: sticky;
+  top: 20px;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #dbe5f1;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow:
+    0 14px 35px
+    rgba(15, 23, 42, 0.08);
+}
+
+.gx-account-user-card {
+  display: flex !important;
+  gap: 14px;
+  align-items: center;
+  padding: 22px;
+  background:
+    linear-gradient(
+      135deg,
+      #07182e,
+      #075985
+    );
+  color: #ffffff;
+}
+
+.gx-account-user-info {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.gx-account-user-info span,
+.gx-account-user-info strong,
+.gx-account-user-info small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gx-account-user-info span {
+  margin-bottom: 5px;
+  color: #7dd3fc;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.gx-account-user-info strong {
+  font-size: 16px;
+}
+
+.gx-account-user-info small {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+}
+
+.gx-account-avatar {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  place-items: center;
+  border: 2px solid
+    rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  background:
+    rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.gx-account-menu {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+  padding: 12px !important;
+}
+
+.gx-account-menu a,
+.gx-account-menu button {
+  display: flex !important;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: #334155;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  text-align: left;
+  text-decoration: none !important;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.gx-account-menu a:hover,
+.gx-account-menu a.is-active {
+  background: #e0f2fe;
+  color: #0369a1;
+  transform: translateX(2px);
+}
+
+.gx-account-menu button {
+  margin-top: 6px;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0 0 10px 10px;
+  color: #b91c1c;
+}
+
+.gx-account-menu button:hover {
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.gx-account-content {
+  width: 100%;
+  min-width: 0;
+}
+
+/* =====================================================
+   FIX ACCOUNT HEADING
+===================================================== */
+
+.gx-account-heading {
+  display: block !important;
+  margin-bottom: 22px;
+}
+
+.gx-account-heading > span {
+  display: block;
+  margin-bottom: 7px;
+  color: #0284c7;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.gx-account-heading h1 {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: clamp(
+    28px,
+    3vw,
+    38px
+  );
+  line-height: 1.15;
+}
+
+.gx-account-heading p {
+  max-width: 760px;
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+/* =====================================================
+   FIX FONT AWESOME ICON BỊ PHÓNG TO
+===================================================== */
+
+.gx-account-page
+.svg-inline--fa {
+  width: 1em !important;
+  height: 1em !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  overflow: visible;
+  vertical-align: -0.125em;
+}
+
+.gx-account-menu
+.svg-inline--fa {
+  width: 18px !important;
+  height: 18px !important;
+  flex: 0 0 18px;
+  padding: 0 !important;
+  font-size: 18px !important;
+}
+
+.gx-account-stat-grid
+.svg-inline--fa {
+  width: 22px !important;
+  height: 22px !important;
+  box-sizing: content-box;
+  padding: 12px !important;
+  border-radius: 12px;
+  background: #e0f2fe;
+  color: #0284c7;
+  font-size: 22px !important;
+}
+
+.gx-account-empty
+.svg-inline--fa {
+  width: 52px !important;
+  height: 52px !important;
+  padding: 0 !important;
+  color: #94a3b8;
+  font-size: 52px !important;
+}
+
+/* Ngăn CSS global làm SVG chiếm toàn màn hình */
+.gx-account-page svg {
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
+/* =====================================================
+   STAT CARDS
+===================================================== */
+
+.gx-account-stat-grid {
+  display: grid !important;
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    ) !important;
+  gap: 14px !important;
+  margin-bottom: 22px;
+}
+
+.gx-account-stat-grid article {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid #dbe5f1;
+  border-radius: 17px;
+  background: #ffffff;
+  box-shadow:
+    0 10px 25px
+    rgba(15, 23, 42, 0.05);
+}
+
+.gx-account-stat-grid article > div {
+  min-width: 0;
+}
+
+.gx-account-stat-grid span,
+.gx-account-stat-grid strong {
+  display: block;
+}
+
+.gx-account-stat-grid span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.gx-account-stat-grid strong {
+  margin-top: 5px;
+  color: #0f172a;
+  font-size: 20px;
+}
+
+/* =====================================================
+   ACCOUNT PANELS AND EMPTY STATE
+===================================================== */
+
+.gx-account-panel {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 20px;
+  padding: 22px;
+  border: 1px solid #dbe5f1;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow:
+    0 12px 30px
+    rgba(15, 23, 42, 0.06);
+}
+
+.gx-account-panel > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.gx-account-panel > header h2 {
+  margin: 5px 0 0;
+  color: #0f172a;
+  font-size: 21px;
+}
+
+.gx-account-panel > header a {
+  color: #0369a1;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.gx-account-empty {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center;
+  align-items: center;
+  min-height: 250px;
+  gap: 12px;
+  padding: 36px 20px;
+  text-align: center;
+}
+
+.gx-account-empty p {
+  margin: 0;
+  color: #475569;
+}
+
+.gx-account-empty a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto !important;
+  padding: 10px 15px;
+  border: 1px solid #0284c7;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #0369a1;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* =====================================================
+   ORDER FILTERS
+===================================================== */
+
+.gx-account-order-filters {
+  display: flex !important;
+  gap: 9px;
+  align-items: center;
+  overflow-x: auto;
+  margin-bottom: 18px;
+  padding-bottom: 5px;
+}
+
+.gx-account-order-filters button {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+}
+
+.gx-account-order-filters
+button.is-active {
+  border-color: #0284c7;
+  background: #0284c7;
+  color: #ffffff;
+}
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 1100px) {
+  .gx-account-stat-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      ) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .gx-account-shell {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  .gx-account-sidebar {
+    position: static;
+  }
+
+  .gx-account-menu {
+    display: grid !important;
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      ) !important;
+  }
+
+  .gx-account-menu button {
+    margin-top: 0;
+    border-top: 0;
+    border-radius: 11px;
+  }
+}
+
+@media (max-width: 600px) {
+  .gx-account-page {
+    padding: 22px 0 45px;
+  }
+
+  .gx-account-menu,
+  .gx-account-stat-grid {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  .gx-account-panel {
+    padding: 17px;
+  }
+
+  .gx-account-panel > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .gx-account-heading h1 {
+    font-size: 27px;
+  }
+}
+/* =====================================================
+   PROFILE + CHANGE PASSWORD
+===================================================== */
+
+.gx-account-form-page {
+  width: 100%;
+  min-width: 0;
+}
+
+.gx-account-profile-grid,
+.gx-account-password-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr) 300px;
+  gap: 22px;
+  align-items: start;
+}
+
+.gx-account-form-card,
+.gx-account-info-card,
+.gx-account-security-card {
+  min-width: 0;
+  border: 1px solid #dbe5f1;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow:
+    0 12px 30px
+    rgba(15, 23, 42, 0.06);
+}
+
+.gx-account-form-card {
+  padding: 24px;
+}
+
+.gx-account-form-card__header {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.gx-account-form-card__icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  place-items: center;
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      135deg,
+      #0284c7,
+      #06b6d4
+    );
+  color: #ffffff;
+  box-shadow:
+    0 10px 20px
+    rgba(2, 132, 199, 0.22);
+}
+
+.gx-account-form-card__icon
+.svg-inline--fa {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.gx-account-form-card__header span {
+  display: block;
+  color: #0284c7;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+}
+
+.gx-account-form-card__header h2 {
+  margin: 4px 0 0;
+  color: #0f172a;
+  font-size: 21px;
+}
+
+.gx-account-form {
+  display: grid;
+  gap: 19px;
+}
+
+.gx-account-form__row {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  gap: 16px;
+}
+
+.gx-account-field {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.gx-account-field > span {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.gx-account-field > small {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.gx-account-input {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 48px;
+  overflow: hidden;
+  padding: 0 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 11px;
+  background: #ffffff;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.gx-account-input:focus-within {
+  border-color: #0284c7;
+  box-shadow:
+    0 0 0 4px
+    rgba(2, 132, 199, 0.1);
+}
+
+.gx-account-input.is-readonly {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.gx-account-input >
+.svg-inline--fa {
+  width: 17px !important;
+  height: 17px !important;
+  flex: 0 0 17px;
+  color: #0284c7;
+}
+
+.gx-account-input input {
+  width: 100%;
+  min-width: 0;
+  height: 46px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #0f172a;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.gx-account-input input::placeholder {
+  color: #94a3b8;
+}
+
+.gx-account-input input:read-only {
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.gx-account-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 11px;
+  padding-top: 5px;
+}
+
+.gx-account-button {
+  display: inline-flex;
+  gap: 9px;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 17px;
+  border: 0;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.gx-account-button:hover:not(
+  :disabled
+) {
+  transform: translateY(-2px);
+}
+
+.gx-account-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.gx-account-button.is-primary {
+ transform: translateY(-2px);
+  background:
+    linear-gradient(
+      135deg,
+      #0284c7,
+      #06b6d4
+    );
+  color: #ffffff;
+  box-shadow:
+    0 10px 20px
+    rgba(2, 132, 199, 0.2);
+}
+
+.gx-account-button.is-secondary {
+  border: 1px solid #cbd5e1;
+  transform: translateY(-2px);
+  background:
+    linear-gradient(
+      135deg,
+      #0284c7,
+      #06b6d4
+    );
+  color: background: #ffffff;
+  color: #475569;
+}
+
+.gx-account-button
+.svg-inline--fa {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.gx-account-alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+  padding: 13px 15px;
+  border-radius: 11px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.gx-account-alert
+.svg-inline--fa {
+  width: 17px !important;
+  height: 17px !important;
+  flex: 0 0 17px;
+  margin-top: 2px;
+}
+
+.gx-account-alert.is-error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.gx-account-alert.is-success {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.gx-account-info-card,
+.gx-account-security-card {
+  padding: 24px;
+}
+
+.gx-account-info-card {
+  text-align: center;
+}
+
+.gx-account-info-card__avatar {
+  display: grid;
+  width: 78px;
+  height: 78px;
+  margin: 0 auto 14px;
+  place-items: center;
+  border: 4px solid #e0f2fe;
+  border-radius: 50%;
+  background:
+    linear-gradient(
+      135deg,
+      #0284c7,
+      #06b6d4
+    );
+  color: #ffffff;
+  font-size: 30px;
+  font-weight: 850;
+}
+
+.gx-account-info-card h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 19px;
+}
+
+.gx-account-info-card > p {
+  overflow: hidden;
+  margin: 6px 0 20px;
+  color: #64748b;
+  font-size: 13px;
+  text-overflow: ellipsis;
+}
+
+.gx-account-info-card dl {
+  display: grid;
+  gap: 0;
+  margin: 0 0 20px;
+  text-align: left;
+}
+
+.gx-account-info-card dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.gx-account-info-card dt {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.gx-account-info-card dd {
+  margin: 0;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 750;
+  text-align: right;
+}
+
+.gx;
+}
+
+.gx-account-info-card dd {
+  margin: 0;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 750;
+  text-align: right;
+}
+
+.gx-account-info-card
+dd.is-active {
+  color: #16a34a;
+}
+
+.gx-account-security-note {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  padding: 14px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  text-align: left;
+}
+
+.gx-account-security-note >
+.svg-inline--fa {
+  width: 19px !important;
+  height: 19px !important;
+  flex: 0 0 19px;
+  margin-top: 2px;
+}
+
+.gx-account-security-note strong,
+.gx-account-security-note span {
+  display: block;
+}
+
+.gx-account-security-note strong {
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.gx-account-security-note span {
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.gx-account-password-input {
+  padding-right: 5px;
+}
+
+.gx-account-password-toggle {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.gx-account-password-toggle:hover {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.gx-account-password-toggle
+.svg-inline--fa {
+  width: 17px !important;
+  height: 17px !important;
+}
+
+.gx-password-strength {
+  margin-top: -8px;
+}
+
+.gx-password-strength__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.gx-password-strength__header
+strong.is-weak {
+  color: #dc2626;
+}
+
+.gx-password-strength__header
+strong.is-medium {
+  color: #d97706;
+}
+
+.gx-password-strength__header
+strong.is-strong {
+  color: #16a34a;
+}
+
+.gx-password-strength__bars {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      5,
+      minmax(0, 1fr)
+    );
+  gap: 5px;
+}
+
+.gx-password-strength__bars span {
+  height: 5px;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.gx-password-strength__bars
+span.is-weak {
+  background: #ef4444;
+}
+
+.gx-password-strength__bars
+span.is-medium {
+  background: #f59e0b;
+}
+
+.gx-password-strength__bars
+span.is-strong {
+  background: #22c55e;
+}
+
+.gx-account-security-card__icon {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 18px;
+  place-items: center;
+  border-radius: 18px;
+  background:
+    linear-gradient(
+      135deg,
+      #07182e,
+      #075985
+    );
+  color: #67e8f9;
+}
+
+.gx-account-security-card__icon
+.svg-inline--fa {
+  width: 27px !important;
+  height: 27px !important;
+}
+
+.gx-account-security-card h3 {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: 19px;
+}
+
+.gx-account-security-card > p {
+  margin: 0 0 17px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.gx-account-security-card ul {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 22px;
+  padding: 0;
+  list-style: none;
+}
+
+.gx-account-security-card li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: #334155;
+ -height: 1.6;
+}
+
+.gx-account-security-card ul {
+  display: grid;
+  gap: 12px;
+  margin: 0  font-size: 13px;
+}
+
+.gx-account-security-card li
+.svg-inline--fa {
+  width: 16px !important;
+  height: 16px !important;
+  flex: 0 0 16px;
+  color: #16a34a;
+}
+
+.gx-account-loading {
+  display: flex;
+  gap: 11px;
+  justify-content: center;
+  align-items: center;
+  min-height: 350px;
+  border: 1px solid #dbe5f1;
+  border-radius: 18px;
+  background: #ffffff;
+  color: #475569;
+}
+
+.gx-account-loading
+.svg-inline--fa {
+  width: 21px !important;
+  height: 21px !important;
+  color: #0284c7;
+}
+
+@media (max-width: 1050px) {
+  .gx-account-profile-grid,
+  .gx-account-password-grid {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .gx-account-info-card,
+  .gx-account-security-card {
+    max-width: none;
+  }
+}
+
+@media (max-width: 650px) {
+  .gx-account-form-card,
+  .gx-account-info-card,
+  .gx-account-security-card {
+    padding: 18px;
+  }
+
+  .gx-account-form__row {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .gx-account-form__actions {
+    flex-direction: column-reverse;
+  }
+
+  .gx-account-button {
+    width: 100%;
+  }
+}

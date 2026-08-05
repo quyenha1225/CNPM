@@ -138,20 +138,22 @@ function Header({
     "STAFF",
     "ADMIN",
   ].includes(currentRole);
-const managementPath =
-  currentRole === "ADMIN"
-    ? "/admin"
-    : "/staff";
 
-const managementTitle =
-  currentRole === "ADMIN"
-    ? "Vào trang quản trị"
-    : "Vào trang làm việc";
+  const managementPath =
+    currentRole === "ADMIN"
+      ? "/admin"
+      : "/staff";
 
-const managementDescription =
-  currentRole === "ADMIN"
-    ? "Quản lý hệ thống và phân quyền"
-    : "Xử lý đơn hàng, kho và thanh toán";
+  const managementTitle =
+    currentRole === "ADMIN"
+      ? "Vào trang quản trị"
+      : "Vào trang làm việc";
+
+  const managementDescription =
+    currentRole === "ADMIN"
+      ? "Quản lý hệ thống và phân quyền"
+      : "Xử lý đơn hàng, kho và thanh toán";
+
   const [
     searchQuery,
     setSearchQuery,
@@ -397,9 +399,7 @@ const managementDescription =
         aria-hidden="true"
       >
         <span className="gx-header__orb gx-header__orb--one" />
-
         <span className="gx-header__orb gx-header__orb--two" />
-
         <span className="gx-header__scan" />
       </div>
 
@@ -411,8 +411,8 @@ const managementDescription =
           </span>
 
           <span>
-            <b>An Toàn</b> hiện đại
-            xử lí nhanh chóng
+            <b>An toàn</b> hiện đại,
+            xử lý nhanh chóng
           </span>
 
           <span>
@@ -454,6 +454,7 @@ const managementDescription =
 
             <span className="gx-header__brand-copy">
               <strong>GEARXIN</strong>
+
               <small>
                 Technology Store
               </small>
@@ -472,6 +473,7 @@ const managementDescription =
                     "robot",
                   ]}
                 />
+
                 AI
               </span>
 
@@ -585,14 +587,10 @@ const managementDescription =
                     (value) => !value,
                   );
 
-                  setIsCategoryOpen(
-                    false,
-                  );
+                  setIsCategoryOpen(false);
                 }}
                 disabled={authLoading}
-                aria-expanded={
-                  isAccountOpen
-                }
+                aria-expanded={isAccountOpen}
               >
                 <span className="gx-header__avatar">
                   <FontAwesomeIcon
@@ -630,117 +628,134 @@ const managementDescription =
                 />
               </button>
 
-              {isAccountOpen && (
-                <div className="gx-header__account-menu">
-                  {isAuthenticated ? (
-                    <>
-                      <div className="gx-header__account-summary">
-                        <strong>
-                          {getUserDisplayName(
-                            user,
-                          )}
-                        </strong>
+{isAccountOpen && (
+  <div className="gx-header__account-menu">
+    {isAuthenticated && (
+      <div className="gx-header__account-summary">
+        <strong>
+          {getUserDisplayName(user)}
+        </strong>
 
-                        <small>
-                          {user?.email ||
-                            user?.user_email ||
-                            "Tài khoản Gearxin"}
-                        </small>
+        <small>
+          {user?.email ||
+            user?.user_email ||
+            "Tài khoản Gearxin"}
+        </small>
 
-                        {canAccessManagement && (
-                          <span className="gx-header__role-badge">
-                            {currentRole ===
-                            "ADMIN"
-                              ? "Quản trị viên"
-                              : "Nhân viên"}
-                          </span>
-                        )}
-                      </div>
+        {canAccessManagement && (
+          <span className="gx-header__role-badge">
+            {currentRole === "ADMIN"
+              ? "Quản trị viên"
+              : "Nhân viên"}
+          </span>
+        )}
+      </div>
+    )}
 
-                      {canAccessManagement && (
-                        <Link
-  to={managementPath}
-  className="gx-header__management-link"
-  onClick={closeMenus}
->
-                          <span className="gx-header__management-icon">
-                            <FontAwesomeIcon
-                              icon={[
-                                "fas",
-                                "th-large",
-                              ]}
-                            />
-                          </span>
+    <Link
+      to="/account"
+      onClick={closeMenus}
+    >
+      <FontAwesomeIcon
+        icon={["fas", "user-alt"]}
+      />
 
-                          <span className="gx-header__management-copy">
-  <strong>
-    {managementTitle}
-  </strong>
+      Thông tin tài khoản
+    </Link>
 
-  <small>
-    {managementDescription}
-  </small>
-</span>
-                          <FontAwesomeIcon
-                            className="gx-header__management-arrow"
-                            icon={[
-                              "fas",
-                              "arrow-right",
-                            ]}
-                          />
-                        </Link>
-                      )}
+    <Link
+      to="/account/orders"
+      onClick={closeMenus}
+    >
+      <FontAwesomeIcon
+        icon={["fas", "shopping-cart"]}
+      />
 
-                      <button
-                        type="button"
-                        className="gx-header__logout-button"
-                        onClick={
-                          handleLogout
-                        }
-                      >
-                        <FontAwesomeIcon
-                          icon={[
-                            "fas",
-                            "sign-out-alt",
-                          ]}
-                        />
+      Lịch sử đơn hàng
+    </Link>
 
-                        Đăng xuất
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <Link
-                        to="/login"
-                        onClick={closeMenus}
-                      >
-                        <FontAwesomeIcon
-                          icon={[
-                            "fas",
-                            "sign-in-alt",
-                          ]}
-                        />
+    <Link
+      to="/account/change-password"
+      onClick={closeMenus}
+    >
+      <FontAwesomeIcon
+        icon={["fas", "lock"]}
+      />
 
-                        Đăng nhập
-                      </Link>
+      Đổi mật khẩu
+    </Link>
 
-                      <Link
-                        to="/register"
-                        onClick={closeMenus}
-                      >
-                        <FontAwesomeIcon
-                          icon={[
-                            "fas",
-                            "user-plus",
-                          ]}
-                        />
+    {isAuthenticated &&
+      canAccessManagement && (
+        <Link
+          to={managementPath}
+          className="gx-header__management-link"
+          onClick={closeMenus}
+        >
+          <span className="gx-header__management-icon">
+            <FontAwesomeIcon
+              icon={["fas", "th-large"]}
+            />
+          </span>
 
-                        Tạo tài khoản
-                      </Link>
-                    </>
-                  )}
-                </div>
-              )}
+          <span className="gx-header__management-copy">
+            <strong>
+              {managementTitle}
+            </strong>
+
+            <small>
+              {managementDescription}
+            </small>
+          </span>
+
+          <FontAwesomeIcon
+            className="gx-header__management-arrow"
+            icon={["fas", "arrow-right"]}
+          />
+        </Link>
+      )}
+
+    {isAuthenticated ? (
+      <button
+        type="button"
+        className="gx-header__logout-button"
+        onClick={handleLogout}
+      >
+        <FontAwesomeIcon
+          icon={["fas", "sign-out-alt"]}
+        />
+
+        Đăng xuất
+      </button>
+    ) : (
+      <>
+        <Link
+          to="/login"
+          onClick={closeMenus}
+        >
+          <FontAwesomeIcon
+            icon={["fas", "sign-in-alt"]}
+          />
+
+          Đăng nhập
+        </Link>
+
+        <Link
+          to="/register"
+          onClick={closeMenus}
+        >
+          <FontAwesomeIcon
+            icon={["fas", "user-plus"]}
+          />
+
+          Tạo tài khoản
+        </Link>
+      </>
+    )}
+  </div>
+)}
+
+
             </div>
 
             <button
@@ -794,9 +809,7 @@ const managementDescription =
 
                 setIsAccountOpen(false);
               }}
-              aria-expanded={
-                isCategoryOpen
-              }
+              aria-expanded={isCategoryOpen}
             >
               <FontAwesomeIcon
                 icon={[
@@ -821,9 +834,7 @@ const managementDescription =
             <div className="gx-header__category-menu">
               <Link
                 to="/products"
-                onClick={
-                  resetProductFilters
-                }
+                onClick={resetProductFilters}
               >
                 <span>
                   <FontAwesomeIcon
@@ -895,9 +906,7 @@ const managementDescription =
             <NavLink
               to="/products"
               className={navClassName}
-              onClick={
-                resetProductFilters
-              }
+              onClick={resetProductFilters}
             >
               Sản phẩm
             </NavLink>

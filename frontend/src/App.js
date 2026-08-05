@@ -10,6 +10,12 @@ import {
 } from "react-router-dom";
 
 import About from "./about/About";
+import AccountLayout from "./account/AccountLayout";
+import AccountOverviewPage from "./account/AccountOverviewPage";
+import ChangePasswordPage from "./account/ChangePasswordPage";
+import OrderDetailPage from "./account/OrderDetailPage";
+import OrderHistoryPage from "./account/OrderHistoryPage";
+import ProfilePage from "./account/ProfilePage";
 import AdminDashboard from "./admin/AdminDashboard";
 import AiSearchResult from "./ai/AiSearchResult";
 import ForgotPassword from "./auth/ForgotPassword";
@@ -103,7 +109,9 @@ function StorefrontRoutes() {
           element={
             <ProductList
               category={currentCategory}
-              setCategory={setCurrentCategory}
+              setCategory={
+                setCurrentCategory
+              }
               brand={currentBrand}
               setBrand={setCurrentBrand}
             />
@@ -115,7 +123,9 @@ function StorefrontRoutes() {
           element={
             <CategoryProductPage
               category={currentCategory}
-              setCategory={setCurrentCategory}
+              setCategory={
+                setCurrentCategory
+              }
               brand={currentBrand}
               setBrand={setCurrentBrand}
             />
@@ -175,6 +185,45 @@ function StorefrontRoutes() {
           }
         />
 
+        {/* ROUTE TÀI KHOẢN NGƯỜI DÙNG */}
+        <Route
+          path="/account"
+          element={
+            <RequireAuth>
+              <AccountLayout />
+            </RequireAuth>
+          }
+        >
+          <Route
+            index
+            element={
+              <AccountOverviewPage />
+            }
+          />
+
+          <Route
+            path="profile"
+            element={<ProfilePage />}
+          />
+
+          <Route
+            path="orders"
+            element={<OrderHistoryPage />}
+          />
+
+          <Route
+            path="orders/:orderId"
+            element={<OrderDetailPage />}
+          />
+
+          <Route
+            path="change-password"
+            element={
+              <ChangePasswordPage />
+            }
+          />
+        </Route>
+
         <Route
           path="*"
           element={<NotFoundPage />}
@@ -187,7 +236,6 @@ function StorefrontRoutes() {
 function App() {
   return (
     <Routes>
-      {/* ADMIN có khu vực quản trị riêng */}
       <Route
         path="/admin/*"
         element={
@@ -197,7 +245,6 @@ function App() {
         }
       />
 
-      {/* STAFF có khu vực nghiệp vụ riêng */}
       <Route
         path="/staff/*"
         element={
@@ -207,7 +254,6 @@ function App() {
         }
       />
 
-      {/* Website khách hàng */}
       <Route
         path="/*"
         element={<StorefrontRoutes />}

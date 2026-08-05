@@ -1,0 +1,7 @@
+Không bắt buộc thay AuthContext.js.
+
+ProfilePage đã gọi refreshSession() sau khi cập nhật hồ sơ,
+vì AuthContext hiện tại đã xuất hàm refreshSession.
+
+Tất cả API trong accountApi.js đều dùng credentials: "include"
+để trình duyệt gửi cookie electroshop_session.
