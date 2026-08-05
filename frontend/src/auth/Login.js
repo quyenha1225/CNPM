@@ -1,10 +1,6 @@
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  Link,
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
 import { toast } from "../utils/Toast";
@@ -143,8 +139,7 @@ function Login() {
 
       navigate("/", { replace: true });
     } catch (error) {
-      const message =
-        error?.message || "Đăng nhập không thành công";
+      const message = error?.message || "Đăng nhập không thành công";
 
       setServerError(message);
       toast.error(message, 3000);
@@ -161,33 +156,13 @@ function Login() {
 
           <h1>Đăng nhập để tiếp tục mua sắm và quản lý hệ thống</h1>
 
-          <p>
-            Khách hàng cần đăng nhập trước khi thêm vào giỏ hàng
-            hoặc mua ngay. Nhân viên và quản trị viên sẽ được
-            chuyển tới khu vực nghiệp vụ riêng.
-          </p>
-
-          <div className="auth-security-list">
-            <span>
-              <FontAwesomeIcon icon={["fas", "shield-alt"]} />
-              Cookie HTTP-only
-            </span>
-            <span>
-              <FontAwesomeIcon icon={["fas", "user-lock"]} />
-              Phân quyền CUSTOMER, STAFF và ADMIN
-            </span>
-            <span>
-              <FontAwesomeIcon icon={["fas", "lock"]} />
-              Mật khẩu mã hóa bcrypt
-            </span>
-          </div>
+          <div className="auth-security-list"></div>
         </aside>
 
         <div className="auth-form-panel">
           <div className="auth-form-heading">
             <span>Chào mừng quay lại</span>
             <h2>Đăng nhập</h2>
-            <p>Dùng tài khoản Gearxin của bạn.</p>
           </div>
 
           {serverError && (
@@ -209,9 +184,7 @@ function Login() {
                   type="email"
                   autoComplete="email"
                   value={form.email}
-                  onChange={(event) =>
-                    updateField("email", event.target.value)
-                  }
+                  onChange={(event) => updateField("email", event.target.value)}
                   placeholder="you@example.com"
                   aria-invalid={Boolean(errors.email)}
                 />
@@ -290,8 +263,7 @@ function Login() {
           </form>
 
           <p className="auth-switch">
-            Chưa có tài khoản?{" "}
-            <Link to="/register">Đăng ký ngay</Link>
+            Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link>
           </p>
         </div>
       </section>
